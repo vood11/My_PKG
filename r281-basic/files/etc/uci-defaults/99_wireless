@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# Copyright (c) 2023 LENAR
+#
+
+# C2G=$(( 1 + (RANDOM % 3) * 5 ))
+# C5G=$(( 36 + (RANDOM % 3) * 4 ))
+MD5=$(head /dev/mtd2 | md5sum | cut -c-6)
+
+for RADIO in "radio0" "radio1"
+do
+  uci -q get wireless."$RADIO" || continue
+  # SSID=$(uci -q get wireless.default_$RADIO.ssid)
+  BAND=$(uci -q get wireless.$RADIO.band)
+  # [ "$SSID" != "OpenWrt" ] && continue
+  uci set wireless."$RADIO".disabled="0"
+  # uci set wireless."$RADIO".country="US"
+  # uci set wireless."$RADIO".cell_density="0"
+  # uci set wireless."$RADIO".noscan="1"
+  if [ "$BAND" = "2g" ];then
+    uci set wireless.default_"$RADIO".ssid="OpenWrt-${MD5}"
+    uci set wireless.default_"$RADIO".ifname="wifi-2g"
+    # uci set wireless."$RADIO".channel="${C2G}"
+  else
+    uci set wireless.default_"$RADIO".ssid="OpenWrt-${MD5}-5G"
+    uci set wireless.default_"$RADIO".ifname="wifi-5g"
+    # uci set wireless."$RADIO".channel="${C5G}"
+  fi
+  uci set wireless.default_"$RADIO".encryption="psk2"
+  uci set wireless.default_"$RADIO".key="OW${MD5}"
+  # uci set wireless.default_"$RADIO".macaddr="random"
+  # uci set wireless.default_"$RADIO".skip_inactivity_poll="1"
+  # uci set wireless.default_"$RADIO".disassoc_low_ack="0"
+  # uci set wireless.default_"$RADIO".wnm_sleep_mode="1"
+  # uci set wireless.default_"$RADIO".dtim_period="3"
+  # uci set wireless.default_"$RADIO".hidden="1"
+  uci -q commit wireless
+done
+
+exit 0

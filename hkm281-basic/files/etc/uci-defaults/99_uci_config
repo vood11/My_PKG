@@ -7,9 +7,13 @@
 
 uci -q batch <<-EOF >/dev/null
   # Set system properties
-  set system.@system[0].hostname="R281"
+  set system.@system[0].hostname="ORBITPRO-HKM281"
   set system.@system[0].conloglevel="8"
   set system.@system[0].cronloglevel="9"
+
+  # Set timezone to Asia/Jakarta (WIB)
+  set system.@system[0].zonename='Asia/Jakarta'
+  set system.@system[0].timezone='WIB-7'
 
   # Configure NTP servers
   del system.ntp.server

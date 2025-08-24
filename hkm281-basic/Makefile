@@ -17,7 +17,7 @@ define Package/$(PKG_NAME)
 	SECTION:=custom
 	CATEGORY:=Packages
 	TITLE:=HKM281 Basic
-	URL:=https://github.com/0x4C334E3438/My_PKG
+	URL:=https://github.com/vood11/My_PKG
 endef
 
 define Package/$(PKG_NAME)/description

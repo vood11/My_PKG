@@ -2,7 +2,7 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=r281-basic
+PKG_NAME:=hkm281-basic
 PKG_VERSION:=1.0
 PKG_RELEASE:=1
 
@@ -16,12 +16,12 @@ include $(INCLUDE_DIR)/package.mk
 define Package/$(PKG_NAME)
 	SECTION:=custom
 	CATEGORY:=Packages
-	TITLE:=R281 Basic
+	TITLE:=HKM281 Basic
 	URL:=https://github.com/0x4C334E3438/My_PKG
 endef
 
 define Package/$(PKG_NAME)/description
-	Configuration and scripts for Notion R281 OpenWrt router.
+	Configuration and scripts for ORBITPRO HKM281 OpenWrt router.
 endef
 
 define Build/Compile

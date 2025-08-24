@@ -1,4 +1,4 @@
-# Notion R281
+# Orbitpro HKM281
 # Copyright (c) 2023 LENAR
 
 O=$(sms_tool -d $DEVICE at "at+zrssi;+zcellinfo?;+zcainfo?")

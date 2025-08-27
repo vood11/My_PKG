@@ -41,12 +41,83 @@ uci -q batch <<-EOF >/dev/null
 
   # Change LAN IP Address
   # set network.lan.ipaddr="192.168.${RN}.1"
+  
+  # Configure AT Commands (atcommands)
+  set atcommands.globals='globals'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Signal Strength'; set atcommands.@cmd[-1].cmd='AT+CSQ;AT+CSQ'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Current Cell Info'; set atcommands.@cmd[-1].cmd='AT+ZCELLINFO?;AT+ZCELLINFO?'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Carrier Agregation Info'; set atcommands.@cmd[-1].cmd='AT+ZCAINFO?;AT+ZCAINFO?'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Locked Band Info'; set atcommands.@cmd[-1].cmd='AT+ZNLOCKBAND?;AT+ZNLOCKBAND?'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Band Info'; set atcommands.@cmd[-1].cmd='AT*LTEBAND?;AT*LTEBAND?'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Reboot'; set atcommands.@cmd[-1].cmd='AT+CFUN=1,1;AT+CFUN=1,1'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Factory Reset'; set atcommands.@cmd[-1].cmd='AT+RSTSET;AT+RSTSET'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network Mode'; set atcommands.@cmd[-1].cmd='AT+ZSNT?;AT+ZSNT?'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network (2G/3G/4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=7,0,3;AT+ZSNT=7,0,3'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network (3G/4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=7,0,2;AT+ZSNT=7,0,2'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network (4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=6,0,0;AT+ZSNT=6,0,0'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network (3G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=2,0,0;AT+ZSNT=2,0,0'
+  add atcommands cmd; set atcommands.@cmd[-1].name='Network (2G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=1,0,0;AT+ZSNT=1,0,0'
+  add atcommands cmd; set atcommands.@cmd[-1].name='LTE DHCP Lease (12h)'; set atcommands.@cmd[-1].cmd='AT+ZDHCPLEASE=43200;AT+ZDHCPLEASE=43200'
 
-  # Apply changes
+  # Configure SMS Tool (sms_tool)
+  set sms_tool.general='sms_tool'
+  set sms_tool.general.ledtimeon='1'
+  set sms_tool.general.ledtimeoff='5'
+  set sms_tool.general.lednotify='0'
+  set sms_tool.general.checktime='10'
+  set sms_tool.general.pdu='0'
+  set sms_tool.general.prestart='6'
+  set sms_tool.general.ledtype='D'
+  set sms_tool.general.readport='/dev/ttyACM0'
+  set sms_tool.general.sendport='/dev/ttyACM0'
+  set sms_tool.general.pnumber='63'
+  set sms_tool.general.prefix='0'
+  set sms_tool.general.information='0'
+  set sms_tool.general.ussdport='/dev/ttyACM0'
+  set sms_tool.general.atport='/dev/ttyACM0'
+  set sms_tool.general.smsled='red:status'
+  set sms_tool.general.storage='ME'
+  set sms_tool.general.mergesms='0'
+  set sms_tool.general.algorithm='Simple'
+  set sms_tool.general.ussd='1'
+
+  # Configure Watchdog
+  set watchdog.@watchdog[0]='watchdog'
+  set watchdog.@watchdog[0].enabled='0'
+  set watchdog.@watchdog[0].action='wan'
+  set watchdog.@watchdog[0].log='all'
+  set watchdog.@watchdog[0].delay='600'
+  set watchdog.@watchdog[0].dest='facebook.com'
+  set watchdog.@watchdog[0].period='30'
+  set watchdog.@watchdog[0].period_count='1'
+  set watchdog.@watchdog[0].iface='wwan'
+  set watchdog.@watchdog[0].modemrestart='0'
+  set watchdog.@watchdog[0].ledstatus='0'
+
+  # Configure Modemband
+  set modemband.@modemband[0]='modemband'
+  set modemband.@modemband[0].iface='wwan'
+  set modemband.@modemband[0].set_port='/dev/ttyACM0'
+  set modemband.@modemband[0].wanrestart='1'
+  set modemband.@modemband[0].modemrestart='0'
+  set modemband.@modemband[0].notify='0'
+
+  # Configure 3ginfo
+  set 3ginfo.@3ginfo[0]='3ginfo'
+  set 3ginfo.@3ginfo[0].website='http://www.btsearch.pl/szukaj.php?mode=std&search='
+  set 3ginfo.@3ginfo[0].network='wwan'
+  set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
+
+  # Apply all changes
   commit system
   commit ntp
   commit luci
   commit network
+  commit atcommands
+  commit sms_tool
+  commit watchdog
+  commit modemband
+  commit 3ginfo
 EOF
 
 exit 0

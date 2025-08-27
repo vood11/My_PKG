@@ -6,6 +6,7 @@
 # C2G=$(( 1 + (RANDOM % 3) * 5 ))
 # C5G=$(( 36 + (RANDOM % 3) * 4 ))
 MD5=$(head /dev/mtd2 | md5sum | cut -c-6)
+HOSTNAME=$(uci -q get system.@system[0].hostname)
 
 for RADIO in "radio0" "radio1"
 do
@@ -18,11 +19,11 @@ do
   # uci set wireless."$RADIO".cell_density="0"
   # uci set wireless."$RADIO".noscan="1"
   if [ "$BAND" = "2g" ];then
-    uci set wireless.default_"$RADIO".ssid="OpenWrt-${MD5}"
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
     uci set wireless.default_"$RADIO".ifname="wifi-2g"
     # uci set wireless."$RADIO".channel="${C2G}"
   else
-    uci set wireless.default_"$RADIO".ssid="OpenWrt-${MD5}-5G"
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
     uci set wireless.default_"$RADIO".ifname="wifi-5g"
     # uci set wireless."$RADIO".channel="${C5G}"
   fi

@@ -1,21 +1,19 @@
 #!/bin/sh
 #
 # Copyright (c) 2023 LENAR
-#
-
-# RN=$(( (RANDOM % 51) * 5 + 5 ))
+# Copyright (c) 2025 DBAI
 
 uci -q batch <<-EOF >/dev/null
-  # Set system properties
+  # System properties
   set system.@system[0].hostname="ORBITPRO-HKM281"
   set system.@system[0].conloglevel="8"
   set system.@system[0].cronloglevel="9"
 
-  # Set timezone to Asia/Jakarta (WIB)
+  # Timezone
   set system.@system[0].zonename='Asia/Jakarta'
   set system.@system[0].timezone='WIB-7'
 
-  # Configure NTP servers
+  # NTP servers
   del system.ntp.server
   add_list system.ntp.server="africa.pool.ntp.org"
   add_list system.ntp.server="asia.pool.ntp.org"
@@ -27,22 +25,19 @@ uci -q batch <<-EOF >/dev/null
   # Luci language
   set luci.main.lang="auto"
 
-  # Configure WWAN interface
+  # WWAN interface
   set network.wwan='interface'
   set network.wwan.device='/dev/ttyACM0'
   set network.wwan.proto='ncm'
   set network.wwan.pdptype='IP'
   set network.wwan.apn='internet'
-  set network.wwan.username='any'
-  set network.wwan.password='any'
+  set network.wwan.username=''
+  set network.wwan.password=''
   set network.wwan.ipv6='auto'
   set network.wwan.delay='8'
   set network.wwan.metric='30'
 
-  # Change LAN IP Address
-  # set network.lan.ipaddr="192.168.${RN}.1"
-  
-  # Configure AT Commands (atcommands)
+  # AT Commands
   set atcommands.globals='globals'
   add atcommands cmd; set atcommands.@cmd[-1].name='Signal Strength'; set atcommands.@cmd[-1].cmd='AT+CSQ;AT+CSQ'
   add atcommands cmd; set atcommands.@cmd[-1].name='Current Cell Info'; set atcommands.@cmd[-1].cmd='AT+ZCELLINFO?;AT+ZCELLINFO?'
@@ -59,7 +54,7 @@ uci -q batch <<-EOF >/dev/null
   add atcommands cmd; set atcommands.@cmd[-1].name='Network (2G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=1,0,0;AT+ZSNT=1,0,0'
   add atcommands cmd; set atcommands.@cmd[-1].name='LTE DHCP Lease (12h)'; set atcommands.@cmd[-1].cmd='AT+ZDHCPLEASE=43200;AT+ZDHCPLEASE=43200'
 
-  # Configure SMS Tool (sms_tool)
+  # SMS Tool
   set sms_tool.general='sms_tool'
   set sms_tool.general.ledtimeon='1'
   set sms_tool.general.ledtimeoff='5'
@@ -81,7 +76,7 @@ uci -q batch <<-EOF >/dev/null
   set sms_tool.general.algorithm='Simple'
   set sms_tool.general.ussd='1'
 
-  # Configure Watchdog
+  # Watchdog
   set watchdog.@watchdog[0]='watchdog'
   set watchdog.@watchdog[0].enabled='0'
   set watchdog.@watchdog[0].action='wan'
@@ -94,7 +89,7 @@ uci -q batch <<-EOF >/dev/null
   set watchdog.@watchdog[0].modemrestart='0'
   set watchdog.@watchdog[0].ledstatus='0'
 
-  # Configure Modemband
+  # Modemband
   set modemband.@modemband[0]='modemband'
   set modemband.@modemband[0].iface='wwan'
   set modemband.@modemband[0].set_port='/dev/ttyACM0'
@@ -102,22 +97,51 @@ uci -q batch <<-EOF >/dev/null
   set modemband.@modemband[0].modemrestart='0'
   set modemband.@modemband[0].notify='0'
 
-  # Configure 3ginfo
+  # 3ginfo
   set 3ginfo.@3ginfo[0]='3ginfo'
   set 3ginfo.@3ginfo[0].website='http://www.btsearch.pl/szukaj.php?mode=std&search='
   set 3ginfo.@3ginfo[0].network='wwan'
   set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
 
-  # Apply all changes
+  # Firewall for WWAN
+  add_list firewall.@zone[1].network='wwan'
+
+  # Apply all UCI changes
   commit system
   commit ntp
   commit luci
   commit network
+  commit firewall
   commit atcommands
   commit sms_tool
   commit watchdog
   commit modemband
   commit 3ginfo
 EOF
+
+# Dynamic WiFi configuration
+HOSTNAME=$(uci -q get system.@system[0].hostname)
+
+for RADIO in "radio0" "radio1"
+do
+  uci -q get wireless."$RADIO" || continue
+  BAND=$(uci -q get wireless.$RADIO.band)
+  uci set wireless."$RADIO".disabled="0"
+  if [ "$BAND" = "2g" ];then
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
+    uci set wireless.default_"$RADIO".ifname="wifi-2g"
+  else
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
+    uci set wireless.default_"$RADIO".ifname="wifi-5g"
+  fi
+  uci set wireless.default_"$RADIO".encryption="psk2"
+  uci set wireless.default_"$RADIO".key="dbai2k25"
+  uci -q commit wireless
+done
+
+# Additional system tweaks
+sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
+sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
+sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc/shadow
 
 exit 0

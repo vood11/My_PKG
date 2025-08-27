@@ -27,6 +27,18 @@ uci -q batch <<-EOF >/dev/null
   # Luci language
   set luci.main.lang="auto"
 
+  # Configure WWAN interface
+  set network.wwan='interface'
+  set network.wwan.device='/dev/ttyACM0'
+  set network.wwan.proto='ncm'
+  set network.wwan.pdptype='IP'
+  set network.wwan.apn='internet'
+  set network.wwan.username='any'
+  set network.wwan.password='any'
+  set network.wwan.ipv6='auto'
+  set network.wwan.delay='8'
+  set network.wwan.metric='30'
+
   # Change LAN IP Address
   # set network.lan.ipaddr="192.168.${RN}.1"
 
@@ -34,7 +46,7 @@ uci -q batch <<-EOF >/dev/null
   commit system
   commit ntp
   commit luci
-  # commit network
+  commit network
 EOF
 
 exit 0

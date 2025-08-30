@@ -37,23 +37,6 @@ uci -q batch <<-EOF >/dev/null
   set network.wwan.delay='8'
   set network.wwan.metric='30'
 
-  # AT Commands
-  set atcommands.globals='globals'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Signal Strength'; set atcommands.@cmd[-1].cmd='AT+CSQ;AT+CSQ'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Current Cell Info'; set atcommands.@cmd[-1].cmd='AT+ZCELLINFO?;AT+ZCELLINFO?'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Carrier Agregation Info'; set atcommands.@cmd[-1].cmd='AT+ZCAINFO?;AT+ZCAINFO?'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Locked Band Info'; set atcommands.@cmd[-1].cmd='AT+ZNLOCKBAND?;AT+ZNLOCKBAND?'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Band Info'; set atcommands.@cmd[-1].cmd='AT*LTEBAND?;AT*LTEBAND?'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Reboot'; set atcommands.@cmd[-1].cmd='AT+CFUN=1,1;AT+CFUN=1,1'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Factory Reset'; set atcommands.@cmd[-1].cmd='AT+RSTSET;AT+RSTSET'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network Mode'; set atcommands.@cmd[-1].cmd='AT+ZSNT?;AT+ZSNT?'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network (2G/3G/4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=7,0,3;AT+ZSNT=7,0,3'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network (3G/4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=7,0,2;AT+ZSNT=7,0,2'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network (4G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=6,0,0;AT+ZSNT=6,0,0'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network (3G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=2,0,0;AT+ZSNT=2,0,0'
-  add atcommands cmd; set atcommands.@cmd[-1].name='Network (2G)'; set atcommands.@cmd[-1].cmd='AT+ZSNT=1,0,0;AT+ZSNT=1,0,0'
-  add atcommands cmd; set atcommands.@cmd[-1].name='LTE DHCP Lease (12h)'; set atcommands.@cmd[-1].cmd='AT+ZDHCPLEASE=43200;AT+ZDHCPLEASE=43200'
-
   # SMS Tool
   set sms_tool.general='sms_tool'
   set sms_tool.general.ledtimeon='1'
@@ -112,7 +95,6 @@ uci -q batch <<-EOF >/dev/null
   commit luci
   commit network
   commit firewall
-  commit atcommands
   commit sms_tool
   commit watchdog
   commit modemband
@@ -139,87 +121,82 @@ do
   uci -q commit wireless
 done
 
-# Patch OpenClash codes
-export CHKFL="/usr/lib/lua/luci/view/openclash/status.htm"
-	#Image sources
-	sed -i "s#https://img.shields.io/badge/Wiki--lightgrey?logo=GitBook&style=social#/luci-static/resources/openclash/Wiki.svg#g" $CHKFL
-	sed -i "s#https://img.shields.io/badge/Tutorials--lightgrey?logo=Wikipedia&style=social#/luci-static/resources/openclash/Tutorials.svg#g" $CHKFL
-	sed -i "s#https://img.shields.io/badge/Star--lightgrey?logo=github&style=social#/luci-static/resources/openclash/Star.svg#g" $CHKFL
-	sed -i "s#https://img.shields.io/badge/Telegram--lightgrey?logo=Telegram&style=social#/luci-static/resources/openclash/Telegram.svg#g" $CHKFL
-	sed -i "s#https://img.shields.io/badge/Sponsor--lightgrey?logo=ko-fi&style=social#/luci-static/resources/openclash/Sponsor.svg#g" $CHKFL
-	
-	logger "  Clash status patched..."
-unset CHKFL
+# Cek dan Patch OpenClash
+if [ -f /etc/config/openclash ]; then
+	logger "OpenClash detected, applying patches..."
 
-export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
-if [ -e "$CHKFL" ] && ! grep -q "Helmi Amirudin" $CHKFL; then
-	sed -i 's#m = SimpleForm("openclash",translate("OpenClash"))#\n-- Helmi Amirudin\nm = SimpleForm("openclash")#g' $CHKFL
-	sed -i 's#m.title = translate#\n-- Helmi Amirudin\nm.title = translate#g' $CHKFL
-	sed -i "/m.title =/c\m.title = false" $CHKFL
-	sed -i "/m.description =/c\m.description = false" $CHKFL
-	#--Remover/renamer credits section
-	#remove = remove sections, show_name = show name only
-	OCDEV="remove"
-	DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
-	if [ $OCDEV = "remove" ]; then
-		#Remove developer or credits section
-		#echo -e "  Removing credits section..."
-		sed -i "s#d =#-- d =#g" $CHKFL
-		sed -i "s#d.title#-- d.title#g" $CHKFL
-		sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
-		sed -i "s#d.reset#-- d:reset#g" $CHKFL
-		sed -i "s#d.submit#-- d:submit#g" $CHKFL
-		sed -i "s#d:section#-- d:section#g" $CHKFL
-		sed -i "s#dler =#-- dler =#g" $CHKFL
-		sed -i "s#dler.pageaction#-- dler.pageaction#g" $CHKFL
-		sed -i "s#dler.reset#-- dler.reset#g" $CHKFL
-		sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
-		sed -i "s#dler:section#-- dler:section#g" $CHKFL
-		[ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
-	elif [ $OCDEV = "show_name" ]; then
-		#Show developers/credits name only
-		#echo -e "  Only showing developer credits name..."
-		[ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
-		sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
-		sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
-		sed -i "s#data:image#null//data:image#g" /usr/lib/lua/luci/view/openclash/developer.htm
+	# Patch OpenClash codes
+	export CHKFL="/usr/lib/lua/luci/view/openclash/status.htm"
+		sed -i "s#https://img.shields.io/badge/Wiki--lightgrey?logo=GitBook&style=social#/luci-static/resources/openclash/Wiki.svg#g" $CHKFL
+		sed -i "s#https://img.shields.io/badge/Tutorials--lightgrey?logo=Wikipedia&style=social#/luci-static/resources/openclash/Tutorials.svg#g" $CHKFL
+		sed -i "s#https://img.shields.io/badge/Star--lightgrey?logo=github&style=social#/luci-static/resources/openclash/Star.svg#g" $CHKFL
+		sed -i "s#https://img.shields.io/badge/Telegram--lightgrey?logo=Telegram&style=social#/luci-static/resources/openclash/Telegram.svg#g" $CHKFL
+		sed -i "s#https://img.shields.io/badge/Sponsor--lightgrey?logo=ko-fi&style=social#/luci-static/resources/openclash/Sponsor.svg#g" $CHKFL
+		
+		logger "  Clash status patched..."
+	unset CHKFL
+
+	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
+	if [ -e "$CHKFL" ] && ! grep -q "Helmi Amirudin" $CHKFL; then
+		sed -i 's#m = SimpleForm("openclash",translate("OpenClash"))#\n-- Helmi Amirudin\nm = SimpleForm("openclash")#g' $CHKFL
+		sed -i 's#m.title = translate#\n-- Helmi Amirudin\nm.title = translate#g' $CHKFL
+		sed -i "/m.title =/c\m.title = false" $CHKFL
+		sed -i "/m.description =/c\m.description = false" $CHKFL
+		#--Remover/renamer credits section
+		#remove = remove sections, show_name = show name only
+		OCDEV="remove"
+		DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
+		if [ $OCDEV = "remove" ]; then
+			sed -i "s#d =#-- d =#g" $CHKFL
+			sed -i "s#d.title#-- d.title#g" $CHKFL
+			sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
+			sed -i "s#d.reset#-- d:reset#g" $CHKFL
+			sed -i "s#d.submit#-- d:submit#g" $CHKFL
+			sed -i "s#d:section#-- d:section#g" $CHKFL
+			sed -i "s#dler =#-- dler =#g" $CHKFL
+			sed -i "s#dler.pageaction#-- dler.pageaction#g" $CHKFL
+			sed -i "s#dler.reset#-- dler.reset#g" $CHKFL
+			sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
+			sed -i "s#dler:section#-- dler:section#g" $CHKFL
+			[ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
+		elif [ $OCDEV = "show_name" ]; then
+			[ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
+			sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
+			sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
+			sed -i "s#data:image#null//data:image#g" /usr/lib/lua/luci/view/openclash/developer.htm
+		fi
+		sed -i "s#s:section#-- s:section#g" $CHKFL
+		cp /usr/lib/lua/luci/view/openclash/myip.htm /usr/lib/lua/luci/view/openclash/myip.htm.bak
+		echo "<\!DOCTYPE html>\n<html>\n</html>" > /usr/lib/lua/luci/view/openclash/myip.htm
+		logger "  Clash client patched..."
 	fi
-	#Remove IP Checker section
-	sed -i "s#s:section#-- s:section#g" $CHKFL
-	cp /usr/lib/lua/luci/view/openclash/myip.htm /usr/lib/lua/luci/view/openclash/myip.htm.bak
-	echo "<\!DOCTYPE html>\n<html>\n</html>" > /usr/lib/lua/luci/view/openclash/myip.htm
-	logger "  Clash client patched..."
-fi
-unset CHKFL
+	unset CHKFL
 
-export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/log.lua"
-if [ -f "$CHKFL" ] && ! grep -q "\-\- m:append(Template" $CHKFL; then
-	# Buat ngilangin config selector di toolbar
-	ptch_oc_lua="log\|config-subscribe\|servers\|settings\|groups-config\|proxy-provider-config\|rule-providers-config\|config-overwrite"
-	sed -i 's#m:append(Template("openclash/toolbar_show"))#-- m:append(Template("openclash/toolbar_show"))#g' $(grep -rli "openclash/toolbar_show" "/usr/lib/lua/luci/model/cbi/openclash" | grep "$ptch_oc_lua")
-	sed -i 's#proxy_form:append#-- proxy_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/proxy-provider-file-manage.lua
-	sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/rule-providers-file-manage.lua
-	sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/game-rules-file-manage.lua
-	# Ganti nama di Toolbar
-	sed -i 's#\"Rule Providers and Groups\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers and Groups" "/usr/lib/lua/luci")
-	sed -i 's#\"Rule Providers Append\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers Append" "/usr/lib/lua/luci")
-	sed -i 's#\"Servers and Groups\"#\"Proxies\"#g' $(grep -rli "Servers and Groups" "/usr/lib/lua/luci")
-	sed -i 's#\"Onekey Create \(Servers\&Groups manage\)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-	sed -i 's#\"Onekey Create (Servers\&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-	sed -i 's#\"Onekey Create (Servers&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-	sed -i 's#\"Onekey Create\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-	sed -i 's#\"Global Settings\"#\"Settings\"#g' $(grep -rli "Global Settings" "/usr/lib/lua/luci")
-	sed -i 's#\"Plugin Settings\"#\"Settings\"#g' $(grep -rli "Plugin Settings" "/usr/lib/lua/luci")
-	sed -i 's#\"Overwrite Settings\"#\"More Settings\"#g' $(grep -rli "Overwrite Settings" "/usr/lib/lua/luci")
-	sed -i 's#Server Logs#Logs#g' $(grep -rli "Logs" "/usr/lib/lua/luci")
-	# grep 'Server Logs' $(grep -rli "Logs" "/usr/lib/lua/luci/")
-	logger "  Clash patched..."
-fi
-unset CHKFL
+	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/log.lua"
+	if [ -f "$CHKFL" ] && ! grep -q "\-\- m:append(Template" $CHKFL; then
+		ptch_oc_lua="log\|config-subscribe\|servers\|settings\|groups-config\|proxy-provider-config\|rule-providers-config\|config-overwrite"
+		sed -i 's#m:append(Template("openclash/toolbar_show"))#-- m:append(Template("openclash/toolbar_show"))#g' $(grep -rli "openclash/toolbar_show" "/usr/lib/lua/luci/model/cbi/openclash" | grep "$ptch_oc_lua")
+		sed -i 's#proxy_form:append#-- proxy_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/proxy-provider-file-manage.lua
+		sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/rule-providers-file-manage.lua
+		sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/game-rules-file-manage.lua
+		sed -i 's#\"Rule Providers and Groups\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers and Groups" "/usr/lib/lua/luci")
+		sed -i 's#\"Rule Providers Append\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers Append" "/usr/lib/lua/luci")
+		sed -i 's#\"Servers and Groups\"#\"Proxies\"#g' $(grep -rli "Servers and Groups" "/usr/lib/lua/luci")
+		sed -i 's#\"Onekey Create \(Servers\&Groups manage\)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+		sed -i 's#\"Onekey Create (Servers\&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+		sed -i 's#\"Onekey Create (Servers&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+		sed -i 's#\"Onekey Create\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+		sed -i 's#\"Global Settings\"#\"Settings\"#g' $(grep -rli "Global Settings" "/usr/lib/lua/luci")
+		sed -i 's#\"Plugin Settings\"#\"Settings\"#g' $(grep -rli "Plugin Settings" "/usr/lib/lua/luci")
+		sed -i 's#\"Overwrite Settings\"#\"More Settings\"#g' $(grep -rli "Overwrite Settings" "/usr/lib/lua/luci")
+		sed -i 's#Server Logs#Logs#g' $(grep -rli "Logs" "/usr/lib/lua/luci/")
+		logger "  Clash patched..."
+	fi
+	unset CHKFL
 
-export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-if [[ ! -f "$CHKFL" ]]; then
-	cat << 'EOF' > $CHKFL
+	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
+	if [[ ! -f "$CHKFL" ]]; then
+		cat << 'EOF' > $CHKFL
 --
 local NXFS = require "nixio.fs"
 
@@ -232,40 +209,69 @@ m.template="openclash/developer"
 return m
 
 EOF
-	logger "  Clash server logs patched..."
-fi
-unset CHKFL
+		logger "  Clash server logs patched..."
+	fi
+	unset CHKFL
 
-export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-if [[ ! -f "$CHKFL" ]] && ! grep -q "openclash/editor" $CHKFL; then
-	sed -i "s#openclash/editor#openclash/developer#g" $CHKFL
-	logger "  Clash editor patched..."
-fi
-unset CHKFL
+	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
+	if [[ ! -f "$CHKFL" ]] && ! grep -q "openclash/editor" $CHKFL; then
+		sed -i "s#openclash/editor#openclash/developer#g" $CHKFL
+		logger "  Clash editor patched..."
+	fi
+	unset CHKFL
 
-export CHKFL="/usr/lib/lua/luci/view/openclash/update.htm"
-if ! grep -q "/cgi-bin/luci/admin/services/openclash/backup" "$CHKFL"; then
-	sed -i 's#<%="backup"%>#<%="/cgi-bin/luci/admin/services/openclash/backup"%>#g' $CHKFL
-	sed -i 's#<%="backup_ex_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_ex_core"%>#g' $CHKFL
-	sed -i 's#<%="backup_only_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_core"%>#g' $CHKFL
-	sed -i 's#<%="backup_only_config"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_rule"%>#g' $CHKFL
-	sed -i 's#<%="backup_only_proxy"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_proxy"%>#g' $CHKFL
-	logger "  Clash backup feature patched..."
-fi
-unset CHKFL
+	export CHKFL="/usr/lib/lua/luci/view/openclash/update.htm"
+	if ! grep -q "/cgi-bin/luci/admin/services/openclash/backup" "$CHKFL"; then
+		sed -i 's#<%="backup"%>#<%="/cgi-bin/luci/admin/services/openclash/backup"%>#g' $CHKFL
+		sed -i 's#<%="backup_ex_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_ex_core"%>#g' $CHKFL
+		sed -i 's#<%="backup_only_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_core"%>#g' $CHKFL
+		sed -i 's#<%="backup_only_config"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_rule"%>#g' $CHKFL
+		sed -i 's#<%="backup_only_proxy"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_proxy"%>#g' $CHKFL
+		logger "  Clash backup feature patched..."
+	fi
+	unset CHKFL
 
-export CHKFL="/usr/share/openclash/openclash_update.sh"
-if [ -f "$CHKFL" ] && ! grep -q "/bin/helmiwrt" $CHKFL; then
-	sed -i "s|/etc/init.d/openclash restart 2|/bin/helmiwrt\n   /etc/init.d/openclash restart 2|g" $CHKFL
-	logger "  Auto update patched..."
+	export CHKFL="/usr/share/openclash/openclash_update.sh"
+	if [ -f "$CHKFL" ] && ! grep -q "/bin/helmiwrt" $CHKFL; then
+		sed -i "s|/etc/init.d/openclash restart 2|/bin/helmiwrt\n   /etc/init.d/openclash restart 2|g" $CHKFL
+		logger "  Auto update patched..."
+	fi
+	unset CHKFL
+else
+	logger "OpenClash not detected, skipping patches."
 fi
-unset CHKFL
-# --- MODIFIKASI OPENCLASH SELESAI ---
+
+# Menambahkan Perintah AT Command
+
+ATCMDS_FILE="/etc/config/atcmds.user"
+
+# Kosongkan file atcmds.user untuk memastikan bersih
+> "$ATCMDS_FILE"
+
+# Isi file dengan daftar perintah AT baru
+cat << EOF > "$ATCMDS_FILE"
+Check signal strength;AT+CSQ
+Reboot Save Modem;AT+CFUN=1,1
+Disable modem;AT+CFUN=
+Enable modem;AT+CFUN=
+Reset modem 2;at+reset
+Check IMEI;AT+CGSN
+Check Baseband Version;AT*READVER
+Reset 4G Only;AT+ZSNT=6,0,0
+EOF
+
+logger "AT commands file has been cleared and populated with default commands."
 
 # Additional system tweaks
 sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
 sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
 sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc/shadow
+
+# Modifikasi ncm.json
+if [ -f /etc/gcom/ncm.json ] && ! grep -q "AT+CHECKATVALID=3736349099827278" /etc/gcom/ncm.json; then
+  sed -i '/"AT\*APPOWERIND=0",/a \            "AT+CHECKATVALID=3736349099827278",' /etc/gcom/ncm.json
+  logger "ncm.json patched for orbitpro."
+fi
 
 # Disable and stop specified services on first boot
 if [ -f /etc/init.d/relayd ]; then

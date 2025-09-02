@@ -172,6 +172,15 @@ ifdown wwan && ifup wwan
 EOF
 chmod +x /etc/lite_watchdog.user
 
+# KONFIGURASI TTYD TANPA LOGIN
+if ! grep -q "/bin/login -f root" /etc/config/ttyd; then
+	uci -q set ttyd.@ttyd[0].interface='@lan'
+	uci -q set ttyd.@ttyd[0].command='/bin/login -f root'
+	uci -q commit ttyd
+	logger "helmilog : Terminal ttyd patched..."
+	echo -e "helmilog : Terminal ttyd patched..."
+fi
+
 # Cek dan Patch OpenClash
 if [ -f /etc/config/openclash ];
 then

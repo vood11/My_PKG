@@ -144,6 +144,13 @@ do
   uci -q commit wireless
 done
 
+# MEMBUAT SCRIPT LITE WATCHDOG
+cat <<'EOF' > /etc/lite_watchdog.user
+#!/bin/sh
+ifdown wwan && ifup wwan
+EOF
+chmod +x /etc/lite_watchdog.user
+
 # Cek dan Patch OpenClash
 if [ -f /etc/config/openclash ];
 then

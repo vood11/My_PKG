@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# Copyright (c) 2023 LENAR
 # Copyright (c) 2025 DBAI
 
 uci -q batch <<-EOF >/dev/null

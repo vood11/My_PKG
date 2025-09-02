@@ -37,6 +37,12 @@ uci -q batch <<-EOF >/dev/null
   set network.wwan.delay='8'
   set network.wwan.metric='30'
 
+  # OpenVPN interface
+  set network.openvpn='interface'
+  set network.openvpn.proto='none'
+  set network.openvpn.device='tun0'
+  set network.openvpn.metric='10'
+
   # SMS Tool
   set sms_tool.general='sms_tool'
   set sms_tool.general.ledtimeon='1'
@@ -94,6 +100,16 @@ uci -q batch <<-EOF >/dev/null
 
   # Firewall for WWAN
   add_list firewall.@zone[1].network='wwan'
+
+  # Firewall for VPN Zone
+  add firewall zone
+  set firewall.@zone[-1].name='vpn'
+  set firewall.@zone[-1].input='REJECT'
+  set firewall.@zone[-1].output='ACCEPT'
+  set firewall.@zone[-1].forward='REJECT'
+  set firewall.@zone[-1].masq='1'
+  set firewall.@zone[-1].mtu_fix='1'
+  add_list firewall.@zone[-1].network='openvpn'
 
   # Apply all UCI changes
   commit system

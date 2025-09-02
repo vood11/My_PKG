@@ -61,16 +61,16 @@ uci -q batch <<-EOF >/dev/null
 
   # Watchdog
   set watchdog.@watchdog[0]='watchdog'
-  set watchdog.@watchdog[0].enabled='0'
-  set watchdog.@watchdog[0].action='wan'
   set watchdog.@watchdog[0].log='all'
   set watchdog.@watchdog[0].delay='600'
-  set watchdog.@watchdog[0].dest='facebook.com'
-  set watchdog.@watchdog[0].period='30'
-  set watchdog.@watchdog[0].period_count='1'
   set watchdog.@watchdog[0].iface='wwan'
   set watchdog.@watchdog[0].modemrestart='0'
   set watchdog.@watchdog[0].ledstatus='0'
+  set watchdog.@watchdog[0].dest='112.215.37.182'
+  set watchdog.@watchdog[0].period='2'
+  set watchdog.@watchdog[0].period_count='3'
+  set watchdog.@watchdog[0].enabled='1'
+  set watchdog.@watchdog[0].action='wan'
 
   # Modemband
   set modemband.@modemband[0]='modemband'
@@ -86,6 +86,12 @@ uci -q batch <<-EOF >/dev/null
   set 3ginfo.@3ginfo[0].network='wwan'
   set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
 
+  # IRQBalance
+  set irqbalance.irqbalance=irqbalance
+  set irqbalance.irqbalance.enabled='1'
+  set irqbalance.irqbalance.deepestcache='2'
+  set irqbalance.irqbalance.interval='10'
+
   # Firewall for WWAN
   add_list firewall.@zone[1].network='wwan'
 
@@ -99,6 +105,7 @@ uci -q batch <<-EOF >/dev/null
   commit watchdog
   commit modemband
   commit 3ginfo
+  commit irqbalance
 EOF
 
 # Dynamic WiFi configuration

@@ -122,7 +122,8 @@ do
 done
 
 # Cek dan Patch OpenClash
-if [ -f /etc/config/openclash ]; then
+if [ -f /etc/config/openclash ];
+then
 	logger "OpenClash detected, applying patches..."
 
 	# Patch OpenClash codes
@@ -146,7 +147,8 @@ if [ -f /etc/config/openclash ]; then
 		#remove = remove sections, show_name = show name only
 		OCDEV="remove"
 		DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
-		if [ $OCDEV = "remove" ]; then
+		if [ $OCDEV = "remove" ];
+then
 			sed -i "s#d =#-- d =#g" $CHKFL
 			sed -i "s#d.title#-- d.title#g" $CHKFL
 			sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
@@ -159,7 +161,8 @@ if [ -f /etc/config/openclash ]; then
 			sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
 			sed -i "s#dler:section#-- dler:section#g" $CHKFL
 			[ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
-		elif [ $OCDEV = "show_name" ]; then
+		elif [ $OCDEV = "show_name" ];
+then
 			[ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
 			sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
 			sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
@@ -261,42 +264,41 @@ Reset 4G Only;AT+ZSNT=6,0,0
 EOF
 
 logger "AT commands file has been cleared and populated with default commands."
-
 # Additional system tweaks
 sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
 sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
 sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc/shadow
 
 # Modifikasi ncm.json
-if [ -f /etc/gcom/ncm.json ] && ! grep -q "AT+CHECKATVALID=3736349099827278" /etc/gcom/ncm.json; then
+if [ -f /etc/gcom/ncm.json ] && ! grep -q "AT+CHECKATVALID=3736349099827278" /etc/gcom/ncm.json;
+then
   sed -i '/"AT\*APPOWERIND=0",/a \            "AT+CHECKATVALID=3736349099827278",' /etc/gcom/ncm.json
   logger "ncm.json patched for orbitpro."
 fi
 
 # Disable and stop specified services on first boot
-if [ -f /etc/init.d/relayd ]; then
+if [ -f /etc/init.d/relayd ];
+then
   /etc/init.d/relayd stop
   /etc/init.d/relayd disable
 fi
 
-if [ -f /etc/init.d/modemmanager ]; then
+if [ -f /etc/init.d/modemmanager ];
+then
   /etc/init.d/modemmanager stop
   /etc/init.d/modemmanager disable
 fi
 
-if [ -f /etc/init.d/netserver ]; then
+if [ -f /etc/init.d/netserver ];
+then
   /etc/init.d/netserver stop
   /etc/init.d/netserver disable
 fi
 
-if [ -f /etc/init.d/bootcount ]; then
+if [ -f /etc/init.d/bootcount ];
+then
   /etc/init.d/bootcount stop
   /etc/init.d/bootcount disable
-fi
-
-if [ -f /etc/init.d/done ]; then
-  /etc/init.d/done stop
-  /etc/init.d/done disable
 fi
 
 exit 0

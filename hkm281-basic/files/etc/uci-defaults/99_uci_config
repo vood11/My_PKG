@@ -15,12 +15,11 @@ uci -q batch <<-EOF >/dev/null
 
   # NTP servers
   del system.ntp.server
-  add_list system.ntp.server="africa.pool.ntp.org"
-  add_list system.ntp.server="asia.pool.ntp.org"
-  add_list system.ntp.server="europe.pool.ntp.org"
-  add_list system.ntp.server="north-america.pool.ntp.org"
-  add_list system.ntp.server="oceania.pool.ntp.org"
-  add_list system.ntp.server="south-america.pool.ntp.org"
+  add_list system.ntp.server="0.id.pool.ntp.org"
+  add_list system.ntp.server="ntp.bmkg.go.id"
+  add_list system.ntp.server="time.google.com"
+  add_list system.ntp.server="0.sg.pool.ntp.org"
+  add_list system.ntp.server="0.pool.ntp.org"
 
   # Luci language
   set luci.main.lang="auto"
@@ -88,7 +87,7 @@ uci -q batch <<-EOF >/dev/null
 
   # 3ginfo
   set 3ginfo.@3ginfo[0]='3ginfo'
-  set 3ginfo.@3ginfo[0].website='http://www.btsearch.pl/szukaj.php?mode=std&search='
+  set 3ginfo.@3ginfo[0].website='https://cacombos.com/'
   set 3ginfo.@3ginfo[0].network='wwan'
   set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
 
@@ -98,6 +97,27 @@ uci -q batch <<-EOF >/dev/null
   set irqbalance.irqbalance.deepestcache='2'
   set irqbalance.irqbalance.interval='10'
 
+  # Custom Commands
+  add luci_commands command
+  set luci_commands.@command[-1].name='Aktivasi Modem'
+  set luci_commands.@command[-1].command='sed -i '\''s/3736349099827278/999999999/'\'' /etc/gcom/ncm.json'
+
+  add luci_commands command
+  set luci_commands.@command[-1].name='Cek Base Band'
+  set luci_commands.@command[-1].command='atcmd AT*READVER'
+
+  add luci_commands command
+  set luci_commands.@command[-1].name='Remove Frequency/Cellid Lock'
+  set luci_commands.@command[-1].command='atcmd AT*CELL=0'
+
+  add luci_commands command
+  set luci_commands.@command[-1].name='Lock Frequency/Cellid AT*CELL=(Mode),(Act),(Band),(Freq),(Cellid)'
+  set luci_commands.@command[-1].command='atcmd AT*CELL=1,3,3,1850,111'
+
+  add luci_commands command
+  set luci_commands.@command[-1].name='Lock B1 & B3'
+  set luci_commands.@command[-1].command='atcmd AT+ZNLOCKBAND=1,0,5,0'
+  
   # Firewall for WWAN
   add_list firewall.@zone[1].network='wwan'
 
@@ -122,6 +142,7 @@ uci -q batch <<-EOF >/dev/null
   commit modemband
   commit 3ginfo
   commit irqbalance
+  commit luci_commands
 EOF
 
 # Dynamic WiFi configuration
@@ -287,10 +308,27 @@ Check signal strength;AT+CSQ
 Reboot Save Modem;AT+CFUN=1,1
 Disable modem;AT+CFUN=0
 Enable modem;AT+CFUN=1
-Reset modem 2;at+reset
+Reset modem;at+reset
 Check IMEI;AT+CGSN
 Check Baseband Version;AT*READVER
-Reset 4G Only;AT+ZSNT=6,0,0
+Mode Auto;AT+ZSNT=0,0,0
+3G Only;AT+ZSNT=2,0,0
+4G Only;AT+ZSNT=6,0,0
+3G&4G;AT+ZSNT=7,0,0
+Lock Band B1;AT+ZNLOCKBAND=1,0,1,0
+Lock Band B3;AT+ZNLOCKBAND=1,0,4,0
+Lock Band B5;AT+ZNLOCKBAND=1,0,10,0
+Lock Band B8;AT+ZNLOCKBAND=1,0,80,0
+Lock Band B40;AT+ZNLOCKBAND=1,0,8000000000,0
+Lock Band B1&B3;AT+ZNLOCKBAND=1,0,5,0
+Lock Band B1&B5;AT+ZNLOCKBAND=1,0,11,0
+Lock Band B1&B8;AT+ZNLOCKBAND=1,0,81,0
+Lock Band B1&B40;AT+ZNLOCKBAND=1,0,8000000001,0
+Lock Band B3&B5;AT+ZNLOCKBAND=1,0,14,0
+Lock Band B3&B8;AT+ZNLOCKBAND=1,0,84,0
+Lock Band B3&B40;AT+ZNLOCKBAND=1,0,8000000004,0
+Lock Band B5&B8;AT+ZNLOCKBAND=1,0,90,0
+Lock Band B5&B40;AT+ZNLOCKBAND=1,0,8000000010,0
 EOF
 
 logger "AT commands file has been cleared and populated with default commands."
@@ -323,12 +361,6 @@ if [ -f /etc/init.d/netserver ];
 then
   /etc/init.d/netserver stop
   /etc/init.d/netserver disable
-fi
-
-if [ -f /etc/init.d/bootcount ];
-then
-  /etc/init.d/bootcount stop
-  /etc/init.d/bootcount disable
 fi
 
 exit 0

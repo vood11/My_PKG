@@ -278,8 +278,8 @@ ATCMDS_FILE="/etc/config/atcmds.user"
 cat << EOF > "$ATCMDS_FILE"
 Check signal strength;AT+CSQ
 Reboot Save Modem;AT+CFUN=1,1
-Disable modem;AT+CFUN=
-Enable modem;AT+CFUN=
+Disable modem;AT+CFUN=0
+Enable modem;AT+CFUN=1
 Reset modem 2;at+reset
 Check IMEI;AT+CGSN
 Check Baseband Version;AT*READVER

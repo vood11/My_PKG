@@ -371,4 +371,16 @@ then
   /etc/init.d/netserver disable
 fi
 
+if [ -f /etc/init.d/internet-detector ];
+then
+  /etc/init.d/internet-detector stop
+  /etc/init.d/internet-detector disable
+fi
+
+if [ -f /etc/init.d/openvpn ];
+then
+  /etc/init.d/openvpn stop
+  /etc/init.d/openvpn disable
+fi
+
 exit 0

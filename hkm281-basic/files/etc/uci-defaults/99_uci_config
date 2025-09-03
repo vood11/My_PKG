@@ -96,6 +96,9 @@ uci -q batch <<-EOF >/dev/null
   set irqbalance.irqbalance.deepestcache='2'
   set irqbalance.irqbalance.interval='10'
 
+  # Internet Detector
+  set internet-detector.config.mode='0'
+
   # Custom Commands (target /etc/config/luci)
   set luci.aktivasi='command'
   set luci.aktivasi.name='Aktivasi Modem'
@@ -141,6 +144,7 @@ uci -q batch <<-EOF >/dev/null
   commit modemband
   commit 3ginfo
   commit irqbalance
+  commit internet-detector
   commit luci_commands
 EOF
 

@@ -41,27 +41,27 @@ uci -q batch <<-EOF >/dev/null
   set network.openvpn.device='tun0'
   set network.openvpn.metric='10'
 
-  # SMS Tool
-  set sms_tool.general='sms_tool'
-  set sms_tool.general.ledtimeon='1'
-  set sms_tool.general.ledtimeoff='5'
-  set sms_tool.general.lednotify='0'
-  set sms_tool.general.checktime='10'
-  set sms_tool.general.pdu='0'
-  set sms_tool.general.prestart='6'
-  set sms_tool.general.ledtype='D'
-  set sms_tool.general.readport='/dev/ttyACM0'
-  set sms_tool.general.sendport='/dev/ttyACM0'
-  set sms_tool.general.pnumber='63'
-  set sms_tool.general.prefix='0'
-  set sms_tool.general.information='0'
-  set sms_tool.general.ussdport='/dev/ttyACM0'
-  set sms_tool.general.atport='/dev/ttyACM0'
-  set sms_tool.general.smsled='red:status'
-  set sms_tool.general.storage='ME'
-  set sms_tool.general.mergesms='0'
-  set sms_tool.general.algorithm='Simple'
-  set sms_tool.general.ussd='1'
+  # SMS Tool JS
+  set sms_tool_js.general='sms_tool_js'
+  set sms_tool_js.general.ledtimeon='1'
+  set sms_tool_js.general.ledtimeoff='5'
+  set sms_tool_js.general.lednotify='0'
+  set sms_tool_js.general.checktime='10'
+  set sms_tool_js.general.pdu='0'
+  set sms_tool_js.general.prestart='6'
+  set sms_tool_js.general.ledtype='D'
+  set sms_tool_js.general.readport='/dev/ttyACM0'
+  set sms_tool_js.general.sendport='/dev/ttyACM0'
+  set sms_tool_js.general.pnumber='63'
+  set sms_tool_js.general.prefix='0'
+  set sms_tool_js.general.information='0'
+  set sms_tool_js.general.ussdport='/dev/ttyACM0'
+  set sms_tool_js.general.atport='/dev/ttyACM0'
+  set sms_tool_js.general.smsled='red:status'
+  set sms_tool_js.general.storage='ME'
+  set sms_tool_js.general.mergesms='0'
+  set sms_tool_js.general.algorithm='Simple'
+  set sms_tool_js.general.ussd='1'
 
   # Watchdog
   set watchdog.@watchdog[0]='watchdog'
@@ -80,7 +80,7 @@ uci -q batch <<-EOF >/dev/null
   set modemband.@modemband[0]='modemband'
   set modemband.@modemband[0].iface='wwan'
   set modemband.@modemband[0].set_port='/dev/ttyACM0'
-  set modemband.@modemband[0].wanrestart='1'
+  set modemband.@modemband[0].wanrestart='0'
   set modemband.@modemband[0].modemrestart='0'
   set modemband.@modemband[0].notify='0'
 
@@ -121,17 +121,22 @@ uci -q batch <<-EOF >/dev/null
   set luci.lock_b1_b3.command='atcmd AT+ZNLOCKBAND=1,0,5,0'
   
   # Firewall for WWAN
+  set firewall.@zone[1].drop_invalid='1'
   add_list firewall.@zone[1].network='wwan'
 
   # Firewall for VPN Zone
   add firewall zone
   set firewall.@zone[-1].name='vpn'
-  set firewall.@zone[-1].input='REJECT'
+  set firewall.@zone[-1].input='ACCEPT'
   set firewall.@zone[-1].output='ACCEPT'
-  set firewall.@zone[-1].forward='REJECT'
+  set firewall.@zone[-1].forward='ACCEPT'
   set firewall.@zone[-1].masq='1'
-  set firewall.@zone[-1].mtu_fix='1'
   add_list firewall.@zone[-1].network='openvpn'
+
+  # Allow VPN to access LAN
+  add firewall forwarding
+  set firewall.@forwarding[-1].src='vpn'
+  set firewall.@forwarding[-1].dest='lan'
 
   # Apply all UCI changes
   commit system
@@ -139,7 +144,7 @@ uci -q batch <<-EOF >/dev/null
   commit luci
   commit network
   commit firewall
-  commit sms_tool
+  commit sms_tool_js
   commit watchdog
   commit modemband
   commit 3ginfo
@@ -148,25 +153,49 @@ uci -q batch <<-EOF >/dev/null
   commit luci_commands
 EOF
 
-# Dynamic WiFi configuration
+# Wait up to 30 seconds for the wireless config file to be created
+wait_time=0
+while [ ! -f /etc/config/wireless ] && [ "$wait_time" -lt 30 ]; do
+  sleep 1
+  wait_time=$((wait_time+1))
+done
+
+# Give the system a brief moment to stabilize after file creation
+sleep 2
+
 HOSTNAME=$(uci -q get system.@system[0].hostname)
 
-for RADIO in "radio0" "radio1"
+# Loop through available radios and configure them
+for RADIO_DEV in $(uci -q show wireless | grep 'radio[0-9]\+=' | cut -d'.' -f2 | cut -d'=' -f1)
 do
-  uci -q get wireless."$RADIO" || continue
-  BAND=$(uci -q get wireless.$RADIO.band)
-  uci set wireless."$RADIO".disabled="0"
-  if [ "$BAND" = "2g" ];then
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
-    uci set wireless.default_"$RADIO".ifname="wifi-2g"
-  else
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
-    uci set wireless.default_"$RADIO".ifname="wifi-5g"
+  uci -q get wireless."$RADIO_DEV" || continue
+  BAND=$(uci -q get wireless."$RADIO_DEV".band)
+  
+  # Enable the radio
+  uci set wireless."$RADIO_DEV".disabled="0"
+  
+  # Find the default interface for this radio
+  WIFI_IFACE=$(uci -q show wireless | grep "device='$RADIO_DEV'" | cut -d'.' -f2)
+
+  if [ -n "$WIFI_IFACE" ]; then
+    if [ "$BAND" = "2g" ] || [ "$BAND" = "2.4g" ]; then
+      uci set wireless."$WIFI_IFACE".ssid="${HOSTNAME}"
+      uci set wireless."$WIFI_IFACE".ifname="wifi-2g"
+    else
+      uci set wireless."$WIFI_IFACE".ssid="${HOSTNAME}-5G"
+      uci set wireless."$WIFI_IFACE".ifname="wifi-5g"
+    fi
+    uci set wireless."$WIFI_IFACE".encryption="psk2"
+    uci set wireless."$WIFI_IFACE".key="dbai2k25"
+    uci set wireless."$WIFI_IFACE".network="lan"
   fi
-  uci set wireless.default_"$RADIO".encryption="psk2"
-  uci set wireless.default_"$RADIO".key="dbai2k25"
-  uci -q commit wireless
 done
+
+# Commit all changes to wireless config at once
+uci -q commit wireless
+
+# Restart the network to apply WiFi changes
+/etc/init.d/network restart &
 
 # MEMBUAT SCRIPT LITE WATCHDOG
 cat <<'EOF' > /etc/lite_watchdog.user
@@ -324,9 +353,17 @@ Reset modem;at+reset
 Check IMEI;AT+CGSN
 Check Baseband Version;AT*READVER
 Mode Auto;AT+ZSNT=0,0,0
+3G Only;AT+ZSNT=1,0,0
 3G Only;AT+ZSNT=2,0,0
 4G Only;AT+ZSNT=6,0,0
 3G&4G;AT+ZSNT=7,0,0
+LTE DHCP Lease (2jam);AT+ZDHCPLEASE=43200
+Background Cell Searching (30s);AT+BGLTEPLMN=1,30
+Received Incoming SMS;AT+CNMI=1,1,2,1,1
+Carrier Aggregation Info;AT+ZCAINFO?
+Band Info;AT*LTEBAND?
+Locked Band Info;AT+ZNLOCKBAND?
+Current Cell Info;AT+ZCELLINFO?
 Lock Band B1;AT+ZNLOCKBAND=1,0,1,0
 Lock Band B3;AT+ZNLOCKBAND=1,0,4,0
 Lock Band B5;AT+ZNLOCKBAND=1,0,10,0
@@ -388,3 +425,4 @@ then
 fi
 
 exit 0
+

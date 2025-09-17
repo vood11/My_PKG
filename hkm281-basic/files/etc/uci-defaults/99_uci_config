@@ -153,48 +153,25 @@ uci -q batch <<-EOF >/dev/null
 EOF
 
 # Wait up to 30 seconds for the wireless config file to be created
-wait_time=0
-while [ ! -f /etc/config/wireless ] && [ "$wait_time" -lt 30 ]; do
-  sleep 1
-  wait_time=$((wait_time+1))
-done
-
-# Give the system a brief moment to stabilize after file creation
 sleep 2
-
 HOSTNAME=$(uci -q get system.@system[0].hostname)
 
-# Loop through available radios and configure them
-for RADIO_DEV in $(uci -q show wireless | grep 'radio[0-9]\+=' | cut -d'.' -f2 | cut -d'=' -f1)
+for RADIO in "radio0" "radio1"
 do
-  uci -q get wireless."$RADIO_DEV" || continue
-  BAND=$(uci -q get wireless."$RADIO_DEV".band)
-  
-  # Enable the radio
-  uci set wireless."$RADIO_DEV".disabled="0"
-  
-  # Find the default interface for this radio
-  WIFI_IFACE=$(uci -q show wireless | grep "device='$RADIO_DEV'" | cut -d'.' -f2)
-
-  if [ -n "$WIFI_IFACE" ]; then
-    if [ "$BAND" = "2g" ] || [ "$BAND" = "2.4g" ]; then
-      uci set wireless."$WIFI_IFACE".ssid="${HOSTNAME}"
-      uci set wireless."$WIFI_IFACE".ifname="wifi-2g"
-    else
-      uci set wireless."$WIFI_IFACE".ssid="${HOSTNAME}-5G"
-      uci set wireless."$WIFI_IFACE".ifname="wifi-5g"
-    fi
-    uci set wireless."$WIFI_IFACE".encryption="psk2"
-    uci set wireless."$WIFI_IFACE".key="dbai2k25"
-    uci set wireless."$WIFI_IFACE".network="lan"
+  uci -q get wireless."$RADIO" || continue
+  BAND=$(uci -q get wireless.$RADIO.band)
+  uci set wireless."$RADIO".disabled="0"
+  if [ "$BAND" = "2g" ];then
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
+    uci set wireless.default_"$RADIO".ifname="wifi-2g"
+  else
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
+    uci set wireless.default_"$RADIO".ifname="wifi-5g"
   fi
+  uci set wireless.default_"$RADIO".encryption="psk2"
+  uci set wireless.default_"$RADIO".key="dbai2k25"
+  uci -q commit wireless
 done
-
-# Commit all changes to wireless config at once
-uci -q commit wireless
-
-# Restart the network to apply WiFi changes
-/etc/init.d/network restart &
 
 # MEMBUAT SCRIPT LITE WATCHDOG
 cat <<'EOF' > /etc/lite_watchdog.user

@@ -41,27 +41,27 @@ uci -q batch <<-EOF >/dev/null
   set network.openvpn.device='tun0'
   set network.openvpn.metric='10'
 
-  # SMS Tool JS
-  set sms_tool_js.general='sms_tool_js'
-  set sms_tool_js.general.ledtimeon='1'
-  set sms_tool_js.general.ledtimeoff='5'
-  set sms_tool_js.general.lednotify='0'
-  set sms_tool_js.general.checktime='10'
-  set sms_tool_js.general.pdu='0'
-  set sms_tool_js.general.prestart='6'
-  set sms_tool_js.general.ledtype='D'
-  set sms_tool_js.general.readport='/dev/ttyACM0'
-  set sms_tool_js.general.sendport='/dev/ttyACM0'
-  set sms_tool_js.general.pnumber='63'
-  set sms_tool_js.general.prefix='0'
-  set sms_tool_js.general.information='0'
-  set sms_tool_js.general.ussdport='/dev/ttyACM0'
-  set sms_tool_js.general.atport='/dev/ttyACM0'
-  set sms_tool_js.general.smsled='red:status'
-  set sms_tool_js.general.storage='ME'
-  set sms_tool_js.general.mergesms='0'
-  set sms_tool_js.general.algorithm='Simple'
-  set sms_tool_js.general.ussd='1'
+  # SMS Tool
+  set sms_tool.general='sms_tool'
+  set sms_tool.general.ledtimeon='1'
+  set sms_tool.general.ledtimeoff='5'
+  set sms_tool.general.lednotify='0'
+  set sms_tool.general.checktime='10'
+  set sms_tool.general.pdu='0'
+  set sms_tool.general.prestart='6'
+  set sms_tool.general.ledtype='D'
+  set sms_tool.general.readport='/dev/ttyACM0'
+  set sms_tool.general.sendport='/dev/ttyACM0'
+  set sms_tool.general.pnumber='63'
+  set sms_tool.general.prefix='0'
+  set sms_tool.general.information='0'
+  set sms_tool.general.ussdport='/dev/ttyACM0'
+  set sms_tool.general.atport='/dev/ttyACM0'
+  set sms_tool.general.smsled='red:status'
+  set sms_tool.general.storage='ME'
+  set sms_tool.general.mergesms='0'
+  set sms_tool.general.algorithm='Simple'
+  set sms_tool.general.ussd='1'
 
   # Watchdog
   set watchdog.@watchdog[0]='watchdog'
@@ -121,7 +121,6 @@ uci -q batch <<-EOF >/dev/null
   set luci.lock_b1_b3.command='atcmd AT+ZNLOCKBAND=1,0,5,0'
   
   # Firewall for WWAN
-  set firewall.@zone[1].drop_invalid='1'
   add_list firewall.@zone[1].network='wwan'
 
   # Firewall for VPN Zone
@@ -144,7 +143,7 @@ uci -q batch <<-EOF >/dev/null
   commit luci
   commit network
   commit firewall
-  commit sms_tool_js
+  commit sms_tool
   commit watchdog
   commit modemband
   commit 3ginfo
@@ -425,4 +424,3 @@ then
 fi
 
 exit 0
-

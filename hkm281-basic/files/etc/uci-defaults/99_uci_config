@@ -3,174 +3,173 @@
 # Copyright (c) 2025 DBAI
 
 uci -q batch <<-EOF >/dev/null
-  # System properties
-  set system.@system[0].hostname="ORBITPRO-HKM281"
-  set system.@system[0].conloglevel="8"
-  set system.@system[0].cronloglevel="9"
+  # System properties
+  set system.@system[0].hostname="ORBITPRO-HKM281"
+  set system.@system[0].conloglevel="8"
+  set system.@system[0].cronloglevel="9"
 
-  # Timezone
-  set system.@system[0].zonename='Asia/Jakarta'
-  set system.@system[0].timezone='WIB-7'
+  # Timezone
+  set system.@system[0].zonename='Asia/Jakarta'
+  set system.@system[0].timezone='WIB-7'
 
-  # NTP servers
-  del system.ntp.server
-  add_list system.ntp.server="0.id.pool.ntp.org"
-  add_list system.ntp.server="ntp.bmkg.go.id"
-  add_list system.ntp.server="time.google.com"
-  add_list system.ntp.server="0.sg.pool.ntp.org"
-  add_list system.ntp.server="0.pool.ntp.org"
+  # NTP servers
+  del system.ntp.server
+  add_list system.ntp.server="0.id.pool.ntp.org"
+  add_list system.ntp.server="ntp.bmkg.go.id"
+  add_list system.ntp.server="time.google.com"
+  add_list system.ntp.server="0.sg.pool.ntp.org"
+  add_list system.ntp.server="0.pool.ntp.org"
 
-  # Luci language
-  set luci.main.lang="auto"
+  # Luci language
+  set luci.main.lang="auto"
 
-  # WWAN interface
-  set network.wwan='interface'
-  set network.wwan.device='/dev/ttyACM0'
-  set network.wwan.proto='ncm'
-  set network.wwan.pdptype='IP'
-  set network.wwan.apn='internet'
-  set network.wwan.username=''
-  set network.wwan.password=''
-  set network.wwan.ipv6='auto'
-  set network.wwan.delay='8'
-  set network.wwan.metric='30'
+  # WWAN interface
+  set network.wwan='interface'
+  set network.wwan.device='/dev/ttyACM0'
+  set network.wwan.proto='ncm'
+  set network.wwan.pdptype='IP'
+  set network.wwan.apn='internet'
+  set network.wwan.username=''
+  set network.wwan.password=''
+  set network.wwan.ipv6='auto'
+  set network.wwan.delay='8'
+  set network.wwan.metric='30'
 
-  # OpenVPN interface
-  set network.openvpn='interface'
-  set network.openvpn.proto='none'
-  set network.openvpn.device='tun0'
-  set network.openvpn.metric='10'
+  # OpenVPN interface
+  set network.openvpn='interface'
+  set network.openvpn.proto='none'
+  set network.openvpn.device='tun0'
+  set network.openvpn.metric='10'
 
-  # SMS Tool
-  set sms_tool.general='sms_tool'
-  set sms_tool.general.ledtimeon='1'
-  set sms_tool.general.ledtimeoff='5'
-  set sms_tool.general.lednotify='0'
-  set sms_tool.general.checktime='10'
-  set sms_tool.general.pdu='0'
-  set sms_tool.general.prestart='6'
-  set sms_tool.general.ledtype='D'
-  set sms_tool.general.readport='/dev/ttyACM0'
-  set sms_tool.general.sendport='/dev/ttyACM0'
-  set sms_tool.general.pnumber='63'
-  set sms_tool.general.prefix='0'
-  set sms_tool.general.information='0'
-  set sms_tool.general.ussdport='/dev/ttyACM0'
-  set sms_tool.general.atport='/dev/ttyACM0'
-  set sms_tool.general.smsled='red:status'
-  set sms_tool.general.storage='ME'
-  set sms_tool.general.mergesms='0'
-  set sms_tool.general.algorithm='Simple'
-  set sms_tool.general.ussd='1'
+  # SMS Tool JS
+  set sms_tool_js.@sms_tool_js[0].ledtimeon='1'
+  set sms_tool_js.@sms_tool_js[0].ledtimeoff='5'
+  set sms_tool_js.@sms_tool_js[0].lednotify='0'
+  set sms_tool_js.@sms_tool_js[0].checktime='10'
+  set sms_tool_js.@sms_tool_js[0].pdu='0'
+  set sms_tool_js.@sms_tool_js[0].prestart='6'
+  set sms_tool_js.@sms_tool_js[0].ledtype='D'
+  set sms_tool_js.@sms_tool_js[0].readport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].sendport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].pnumber='63'
+  set sms_tool_js.@sms_tool_js[0].prefix='0'
+  set sms_tool_js.@sms_tool_js[0].information='0'
+  set sms_tool_js.@sms_tool_js[0].ussdport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].atport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].smsled='red:status'
+  set sms_tool_js.@sms_tool_js[0].storage='ME'
+  set sms_tool_js.@sms_tool_js[0].mergesms='0'
+  set sms_tool_js.@sms_tool_js[0].algorithm='Simple'
+  set sms_tool_js.@sms_tool_js[0].ussd='1'
 
-  # Watchdog
-  set watchdog.@watchdog[0]='watchdog'
-  set watchdog.@watchdog[0].log='all'
-  set watchdog.@watchdog[0].delay='600'
-  set watchdog.@watchdog[0].iface='wwan'
-  set watchdog.@watchdog[0].modemrestart='0'
-  set watchdog.@watchdog[0].ledstatus='0'
-  set watchdog.@watchdog[0].dest='112.215.37.182'
-  set watchdog.@watchdog[0].period='2'
-  set watchdog.@watchdog[0].period_count='3'
-  set watchdog.@watchdog[0].enabled='1'
-  set watchdog.@watchdog[0].action='wan'
+  # Watchdog
+  set watchdog.@watchdog[0]='watchdog'
+  set watchdog.@watchdog[0].log='all'
+  set watchdog.@watchdog[0].delay='600'
+  set watchdog.@watchdog[0].iface='wwan'
+  set watchdog.@watchdog[0].modemrestart='0'
+  set watchdog.@watchdog[0].ledstatus='0'
+  set watchdog.@watchdog[0].dest='112.215.37.182'
+  set watchdog.@watchdog[0].period='2'
+  set watchdog.@watchdog[0].period_count='3'
+  set watchdog.@watchdog[0].enabled='1'
+  set watchdog.@watchdog[0].action='wan'
 
-  # Modemband
-  set modemband.@modemband[0]='modemband'
-  set modemband.@modemband[0].iface='wwan'
-  set modemband.@modemband[0].set_port='/dev/ttyACM0'
-  set modemband.@modemband[0].wanrestart='0'
-  set modemband.@modemband[0].modemrestart='0'
-  set modemband.@modemband[0].notify='0'
+  # Modemband
+  set modemband.@modemband[0]='modemband'
+  set modemband.@modemband[0].iface='wwan'
+  set modemband.@modemband[0].set_port='/dev/ttyACM0'
+  set modemband.@modemband[0].wanrestart='0'
+  set modemband.@modemband[0].modemrestart='0'
+  set modemband.@modemband[0].notify='0'
 
-  # 3ginfo
-  set 3ginfo.@3ginfo[0]='3ginfo'
-  set 3ginfo.@3ginfo[0].website='https://cacombos.com/'
-  set 3ginfo.@3ginfo[0].network='wwan'
-  set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
+  # 3ginfo
+  set 3ginfo.@3ginfo[0]='3ginfo'
+  set 3ginfo.@3ginfo[0].website='https://cacombos.com/'
+  set 3ginfo.@3ginfo[0].network='wwan'
+  set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
 
-  # IRQBalance
-  set irqbalance.irqbalance=irqbalance
-  set irqbalance.irqbalance.enabled='1'
-  set irqbalance.irqbalance.deepestcache='2'
-  set irqbalance.irqbalance.interval='10'
+  # IRQBalance
+  set irqbalance.irqbalance=irqbalance
+  set irqbalance.irqbalance.enabled='1'
+  set irqbalance.irqbalance.deepestcache='2'
+  set irqbalance.irqbalance.interval='10'
 
-  # Internet Detector
-  set internet-detector.config.mode='0'
+  # Internet Detector
+  set internet-detector.config.mode='0'
 
-  # Custom Commands (target /etc/config/luci)
-  set luci.aktivasi='command'
-  set luci.aktivasi.name='Aktivasi Modem'
-  set luci.aktivasi.command='sed -i '\''s/3736349099827278/999999999/'\'' /etc/gcom/ncm.json'
+  # Custom Commands (target /etc/config/luci)
+  set luci.aktivasi='command'
+  set luci.aktivasi.name='Aktivasi Modem'
+  set luci.aktivasi.command='sed -i '\''s/3736349099827278/999999999/'\'' /etc/gcom/ncm.json'
 
-  set luci.cek_bb='command'
-  set luci.cek_bb.name='Cek Base Band'
-  set luci.cek_bb.command='atcmd AT*READVER'
+  set luci.cek_bb='command'
+  set luci.cek_bb.name='Cek Base Band'
+  set luci.cek_bb.command='atcmd AT*READVER'
 
-  set luci.remove_lock='command'
-  set luci.remove_lock.name='Remove Frequency/Cellid Lock'
-  set luci.remove_lock.command='atcmd AT*CELL=0'
+  set luci.remove_lock='command'
+  set luci.remove_lock.name='Remove Frequency/Cellid Lock'
+  set luci.remove_lock.command='atcmd AT*CELL=0'
 
-  set luci.set_lock='command'
-  set luci.set_lock.name='Lock Frequency/Cellid AT*CELL=(Mode),(Act),(Band),(Freq),(Cellid)'
-  set luci.set_lock.command='atcmd AT*CELL=1,3,3,1850,111'
+  set luci.set_lock='command'
+  set luci.set_lock.name='Lock Frequency/Cellid AT*CELL=(Mode),(Act),(Band),(Freq),(Cellid)'
+  set luci.set_lock.command='atcmd AT*CELL=1,3,3,1850,111'
 
-  set luci.lock_b1_b3='command'
-  set luci.lock_b1_b3.name='Lock B1 & B3'
-  set luci.lock_b1_b3.command='atcmd AT+ZNLOCKBAND=1,0,5,0'
-  
-  # Firewall for WWAN
-  add_list firewall.@zone[1].network='wwan'
+  set luci.lock_b1_b3='command'
+  set luci.lock_b1_b3.name='Lock B1 & B3'
+  set luci.lock_b1_b3.command='atcmd AT+ZNLOCKBAND=1,0,5,0'
+  
+  # Firewall for WWAN
+  add_list firewall.@zone[1].network='wwan'
 
-  # Firewall for VPN Zone
-  add firewall zone
-  set firewall.@zone[-1].name='vpn'
-  set firewall.@zone[-1].input='ACCEPT'
-  set firewall.@zone[-1].output='ACCEPT'
-  set firewall.@zone[-1].forward='ACCEPT'
-  set firewall.@zone[-1].masq='1'
-  add_list firewall.@zone[-1].network='openvpn'
+  # Firewall for VPN Zone
+  add firewall zone
+  set firewall.@zone[-1].name='vpn'
+  set firewall.@zone[-1].input='ACCEPT'
+  set firewall.@zone[-1].output='ACCEPT'
+  set firewall.@zone[-1].forward='ACCEPT'
+  set firewall.@zone[-1].masq='1'
+  add_list firewall.@zone[-1].network='openvpn'
 
-  # Allow VPN to access LAN
-  add firewall forwarding
-  set firewall.@forwarding[-1].src='vpn'
-  set firewall.@forwarding[-1].dest='lan'
+  # Allow VPN to access LAN
+  add firewall forwarding
+  set firewall.@forwarding[-1].src='vpn'
+  set firewall.@forwarding[-1].dest='lan'
 
-  # Apply all UCI changes
-  commit system
-  commit ntp
-  commit luci
-  commit network
-  commit firewall
-  commit sms_tool
-  commit watchdog
-  commit modemband
-  commit 3ginfo
-  commit irqbalance
-  commit internet-detector
-  commit luci_commands
+  # Apply all UCI changes
+  commit system
+  commit ntp
+  commit luci
+  commit network
+  commit firewall
+  commit sms_tool_js
+  commit watchdog
+  commit modemband
+  commit 3ginfo
+  commit irqbalance
+  commit internet-detector
+  commit luci_commands
 EOF
 
 # Wait up to 30 seconds for the wireless config file to be created
-sleep 3
+sleep 2
 HOSTNAME=$(uci -q get system.@system[0].hostname)
 
 for RADIO in "radio0" "radio1"
 do
-  uci -q get wireless."$RADIO" || continue
-  BAND=$(uci -q get wireless.$RADIO.band)
-  uci set wireless."$RADIO".disabled="0"
-  if [ "$BAND" = "2g" ];then
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
-    uci set wireless.default_"$RADIO".ifname="wifi-2g"
-  else
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
-    uci set wireless.default_"$RADIO".ifname="wifi-5g"
-  fi
-  uci set wireless.default_"$RADIO".encryption="psk2"
-  uci set wireless.default_"$RADIO".key="dbai2k25"
-  uci -q commit wireless
+  uci -q get wireless."$RADIO" || continue
+  BAND=$(uci -q get wireless.$RADIO.band)
+  uci set wireless."$RADIO".disabled="0"
+  if [ "$BAND" = "2g" ];then
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
+    uci set wireless.default_"$RADIO".ifname="wifi-2g"
+  else
+    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
+    uci set wireless.default_"$RADIO".ifname="wifi-5g"
+  fi
+  uci set wireless.default_"$RADIO".encryption="psk2"
+  uci set wireless.default_"$RADIO".key="dbai2k25"
+  uci -q commit wireless
 done
 
 # MEMBUAT SCRIPT LITE WATCHDOG
@@ -182,92 +181,92 @@ chmod +x /etc/lite_watchdog.user
 
 # KONFIGURASI TTYD TANPA LOGIN
 if ! grep -q "/bin/login -f root" /etc/config/ttyd; then
-	uci -q set ttyd.@ttyd[0].interface='@lan'
-	uci -q set ttyd.@ttyd[0].command='/bin/login -f root'
-	uci -q commit ttyd
-	logger "helmilog : Terminal ttyd patched..."
-	echo -e "helmilog : Terminal ttyd patched..."
+  uci -q set ttyd.@ttyd[0].interface='@lan'
+  uci -q set ttyd.@ttyd[0].command='/bin/login -f root'
+  uci -q commit ttyd
+  logger "helmilog : Terminal ttyd patched..."
+  echo -e "helmilog : Terminal ttyd patched..."
 fi
 
 # Cek dan Patch OpenClash
 if [ -f /etc/config/openclash ];
 then
-	logger "OpenClash detected, applying patches..."
+  logger "OpenClash detected, applying patches..."
 
-	# Patch OpenClash codes
-	export CHKFL="/usr/lib/lua/luci/view/openclash/status.htm"
-		sed -i "s#https://img.shields.io/badge/Wiki--lightgrey?logo=GitBook&style=social#/luci-static/resources/openclash/Wiki.svg#g" $CHKFL
-		sed -i "s#https://img.shields.io/badge/Tutorials--lightgrey?logo=Wikipedia&style=social#/luci-static/resources/openclash/Tutorials.svg#g" $CHKFL
-		sed -i "s#https://img.shields.io/badge/Star--lightgrey?logo=github&style=social#/luci-static/resources/openclash/Star.svg#g" $CHKFL
-		sed -i "s#https://img.shields.io/badge/Telegram--lightgrey?logo=Telegram&style=social#/luci-static/resources/openclash/Telegram.svg#g" $CHKFL
-		sed -i "s#https://img.shields.io/badge/Sponsor--lightgrey?logo=ko-fi&style=social#/luci-static/resources/openclash/Sponsor.svg#g" $CHKFL
-		
-		logger "  Clash status patched..."
-	unset CHKFL
+  # Patch OpenClash codes
+  export CHKFL="/usr/lib/lua/luci/view/openclash/status.htm"
+    sed -i "s#https://img.shields.io/badge/Wiki--lightgrey?logo=GitBook&style=social#/luci-static/resources/openclash/Wiki.svg#g" $CHKFL
+    sed -i "s#https://img.shields.io/badge/Tutorials--lightgrey?logo=Wikipedia&style=social#/luci-static/resources/openclash/Tutorials.svg#g" $CHKFL
+    sed -i "s#https://img.shields.io/badge/Star--lightgrey?logo=github&style=social#/luci-static/resources/openclash/Star.svg#g" $CHKFL
+    sed -i "s#https://img.shields.io/badge/Telegram--lightgrey?logo=Telegram&style=social#/luci-static/resources/openclash/Telegram.svg#g" $CHKFL
+    sed -i "s#https://img.shields.io/badge/Sponsor--lightgrey?logo=ko-fi&style=social#/luci-static/resources/openclash/Sponsor.svg#g" $CHKFL
+    
+    logger "  Clash status patched..."
+  unset CHKFL
 
-	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
-	if [ -e "$CHKFL" ] && ! grep -q "Helmi Amirudin" $CHKFL; then
-		sed -i 's#m = SimpleForm("openclash",translate("OpenClash"))#\n-- Helmi Amirudin\nm = SimpleForm("openclash")#g' $CHKFL
-		sed -i 's#m.title = translate#\n-- Helmi Amirudin\nm.title = translate#g' $CHKFL
-		sed -i "/m.title =/c\m.title = false" $CHKFL
-		sed -i "/m.description =/c\m.description = false" $CHKFL
-		#--Remover/renamer credits section
-		#remove = remove sections, show_name = show name only
-		OCDEV="remove"
-		DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
-		if [ $OCDEV = "remove" ];
+  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
+  if [ -e "$CHKFL" ] && ! grep -q "Helmi Amirudin" $CHKFL; then
+    sed -i 's#m = SimpleForm("openclash",translate("OpenClash"))#\n-- Helmi Amirudin\nm = SimpleForm("openclash")#g' $CHKFL
+    sed -i 's#m.title = translate#\n-- Helmi Amirudin\nm.title = translate#g' $CHKFL
+    sed -i "/m.title =/c\m.title = false" $CHKFL
+    sed -i "/m.description =/c\m.description = false" $CHKFL
+    #--Remover/renamer credits section
+    #remove = remove sections, show_name = show name only
+    OCDEV="remove"
+    DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
+    if [ $OCDEV = "remove" ];
 then
-			sed -i "s#d =#-- d =#g" $CHKFL
-			sed -i "s#d.title#-- d.title#g" $CHKFL
-			sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
-			sed -i "s#d.reset#-- d:reset#g" $CHKFL
-			sed -i "s#d.submit#-- d:submit#g" $CHKFL
-			sed -i "s#d:section#-- d:section#g" $CHKFL
-			sed -i "s#dler =#-- dler =#g" $CHKFL
-			sed -i "s#dler.pageaction#-- dler.pageaction#g" $CHKFL
-			sed -i "s#dler.reset#-- dler.reset#g" $CHKFL
-			sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
-			sed -i "s#dler:section#-- dler:section#g" $CHKFL
-			[ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
-		elif [ $OCDEV = "show_name" ];
+      sed -i "s#d =#-- d =#g" $CHKFL
+      sed -i "s#d.title#-- d.title#g" $CHKFL
+      sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
+      sed -i "s#d.reset#-- d:reset#g" $CHKFL
+      sed -i "s#d.submit#-- d:submit#g" $CHKFL
+      sed -i "s#d:section#-- d:section#g" $CHKFL
+      sed -i "s#dler =#-- dler =#g" $CHKFL
+      sed -i "s#dler.pageaction#-- dler.pageaction#g" $CHKFL
+      sed -i "s#dler.reset#-- dler.reset#g" $CHKFL
+      sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
+      sed -i "s#dler:section#-- dler:section#g" $CHKFL
+      [ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
+    elif [ $OCDEV = "show_name" ];
 then
-			[ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
-			sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
-			sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
-			sed -i "s#data:image#null//data:image#g" /usr/lib/lua/luci/view/openclash/developer.htm
-		fi
-		sed -i "s#s:section#-- s:section#g" $CHKFL
-		cp /usr/lib/lua/luci/view/openclash/myip.htm /usr/lib/lua/luci/view/openclash/myip.htm.bak
-		echo "<\!DOCTYPE html>\n<html>\n</html>" > /usr/lib/lua/luci/view/openclash/myip.htm
-		logger "  Clash client patched..."
-	fi
-	unset CHKFL
+      [ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
+      sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
+      sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
+      sed -i "s#data:image#null//data:image#g" /usr/lib/lua/luci/view/openclash/developer.htm
+    fi
+    sed -i "s#s:section#-- s:section#g" $CHKFL
+    cp /usr/lib/lua/luci/view/openclash/myip.htm /usr/lib/lua/luci/view/openclash/myip.htm.bak
+    echo "<\!DOCTYPE html>\n<html>\n</html>" > /usr/lib/lua/luci/view/openclash/myip.htm
+    logger "  Clash client patched..."
+  fi
+  unset CHKFL
 
-	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/log.lua"
-	if [ -f "$CHKFL" ] && ! grep -q "\-\- m:append(Template" $CHKFL; then
-		ptch_oc_lua="log\|config-subscribe\|servers\|settings\|groups-config\|proxy-provider-config\|rule-providers-config\|config-overwrite"
-		sed -i 's#m:append(Template("openclash/toolbar_show"))#-- m:append(Template("openclash/toolbar_show"))#g' $(grep -rli "openclash/toolbar_show" "/usr/lib/lua/luci/model/cbi/openclash" | grep "$ptch_oc_lua")
-		sed -i 's#proxy_form:append#-- proxy_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/proxy-provider-file-manage.lua
-		sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/rule-providers-file-manage.lua
-		sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/game-rules-file-manage.lua
-		sed -i 's#\"Rule Providers and Groups\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers and Groups" "/usr/lib/lua/luci")
-		sed -i 's#\"Rule Providers Append\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers Append" "/usr/lib/lua/luci")
-		sed -i 's#\"Servers and Groups\"#\"Proxies\"#g' $(grep -rli "Servers and Groups" "/usr/lib/lua/luci")
-		sed -i 's#\"Onekey Create \(Servers\&Groups manage\)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-		sed -i 's#\"Onekey Create (Servers\&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-		sed -i 's#\"Onekey Create (Servers&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-		sed -i 's#\"Onekey Create\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-		sed -i 's#\"Global Settings\"#\"Settings\"#g' $(grep -rli "Global Settings" "/usr/lib/lua/luci")
-		sed -i 's#\"Plugin Settings\"#\"Settings\"#g' $(grep -rli "Plugin Settings" "/usr/lib/lua/luci")
-		sed -i 's#\"Overwrite Settings\"#\"More Settings\"#g' $(grep -rli "Overwrite Settings" "/usr/lib/lua/luci")
-		sed -i 's#Server Logs#Logs#g' $(grep -rli "Logs" "/usr/lib/lua/luci/")
-		logger "  Clash patched..."
-	fi
-	unset CHKFL
+  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/log.lua"
+  if [ -f "$CHKFL" ] && ! grep -q "\-\- m:append(Template" $CHKFL; then
+    ptch_oc_lua="log\|config-subscribe\|servers\|settings\|groups-config\|proxy-provider-config\|rule-providers-config\|config-overwrite"
+    sed -i 's#m:append(Template("openclash/toolbar_show"))#-- m:append(Template("openclash/toolbar_show"))#g' $(grep -rli "openclash/toolbar_show" "/usr/lib/lua/luci/model/cbi/openclash" | grep "$ptch_oc_lua")
+    sed -i 's#proxy_form:append#-- proxy_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/proxy-provider-file-manage.lua
+    sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/rule-providers-file-manage.lua
+    sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/game-rules-file-manage.lua
+    sed -i 's#\"Rule Providers and Groups\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers and Groups" "/usr/lib/lua/luci")
+    sed -i 's#\"Rule Providers Append\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers Append" "/usr/lib/lua/luci")
+    sed -i 's#\"Servers and Groups\"#\"Proxies\"#g' $(grep -rli "Servers and Groups" "/usr/lib/lua/luci")
+    sed -i 's#\"Onekey Create \(Servers\&Groups manage\)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+    sed -i 's#\"Onekey Create (Servers\&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+    sed -i 's#\"Onekey Create (Servers&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+    sed -i 's#\"Onekey Create\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
+    sed -i 's#\"Global Settings\"#\"Settings\"#g' $(grep -rli "Global Settings" "/usr/lib/lua/luci")
+    sed -i 's#\"Plugin Settings\"#\"Settings\"#g' $(grep -rli "Plugin Settings" "/usr/lib/lua/luci")
+    sed -i 's#\"Overwrite Settings\"#\"More Settings\"#g' $(grep -rli "Overwrite Settings" "/usr/lib/lua/luci")
+    sed -i 's#Server Logs#Logs#g' $(grep -rli "Logs" "/usr/lib/lua/luci/")
+    logger "  Clash patched..."
+  fi
+  unset CHKFL
 
-	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-	if [[ ! -f "$CHKFL" ]]; then
-		cat << 'EOF' > $CHKFL
+  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
+  if [[ ! -f "$CHKFL" ]]; then
+    cat << 'EOF' > $CHKFL
 --
 local NXFS = require "nixio.fs"
 
@@ -280,41 +279,41 @@ m.template="openclash/developer"
 return m
 
 EOF
-		logger "  Clash server logs patched..."
-	fi
-	unset CHKFL
+    logger "  Clash server logs patched..."
+  fi
+  unset CHKFL
 
-	export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-	if [[ ! -f "$CHKFL" ]] && ! grep -q "openclash/editor" $CHKFL; then
-		sed -i "s#openclash/editor#openclash/developer#g" $CHKFL
-		logger "  Clash editor patched..."
-	fi
-	unset CHKFL
+  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
+  if [[ ! -f "$CHKFL" ]] && ! grep -q "openclash/editor" $CHKFL; then
+    sed -i "s#openclash/editor#openclash/developer#g" $CHKFL
+    logger "  Clash editor patched..."
+  fi
+  unset CHKFL
 
-	export CHKFL="/usr/lib/lua/luci/view/openclash/update.htm"
-	if ! grep -q "/cgi-bin/luci/admin/services/openclash/backup" "$CHKFL"; then
-		sed -i 's#<%="backup"%>#<%="/cgi-bin/luci/admin/services/openclash/backup"%>#g' $CHKFL
-		sed -i 's#<%="backup_ex_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_ex_core"%>#g' $CHKFL
-		sed -i 's#<%="backup_only_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_core"%>#g' $CHKFL
-		sed -i 's#<%="backup_only_config"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_rule"%>#g' $CHKFL
-		sed -i 's#<%="backup_only_proxy"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_proxy"%>#g' $CHKFL
-		logger "  Clash backup feature patched..."
-	fi
-	unset CHKFL
+  export CHKFL="/usr/lib/lua/luci/view/openclash/update.htm"
+  if ! grep -q "/cgi-bin/luci/admin/services/openclash/backup" "$CHKFL"; then
+    sed -i 's#<%="backup"%>#<%="/cgi-bin/luci/admin/services/openclash/backup"%>#g' $CHKFL
+    sed -i 's#<%="backup_ex_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_ex_core"%>#g' $CHKFL
+    sed -i 's#<%="backup_only_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_core"%>#g' $CHKFL
+    sed -i 's#<%="backup_only_config"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_rule"%>#g' $CHKFL
+    sed -i 's#<%="backup_only_proxy"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_proxy"%>#g' $CHKFL
+    logger "  Clash backup feature patched..."
+  fi
+  unset CHKFL
 
-	export CHKFL="/usr/share/openclash/openclash_update.sh"
-	if [ -f "$CHKFL" ] && ! grep -q "/bin/helmiwrt" $CHKFL; then
-		sed -i "s|/etc/init.d/openclash restart 2|/bin/helmiwrt\n   /etc/init.d/openclash restart 2|g" $CHKFL
-		logger "  Auto update patched..."
-	fi
-	unset CHKFL
+  export CHKFL="/usr/share/openclash/openclash_update.sh"
+  if [ -f "$CHKFL" ] && ! grep -q "/bin/helmiwrt" $CHKFL; then
+    sed -i "s|/etc/init.d/openclash restart 2|/bin/helmiwrt\n   /etc/init.d/openclash restart 2|g" $CHKFL
+    logger "  Auto update patched..."
+  fi
+  unset CHKFL
 else
-	logger "OpenClash not detected, skipping patches."
+  logger "OpenClash not detected, skipping patches."
 fi
 
 # Menambahkan Perintah AT Command
 
-ATCMDS_FILE="/etc/config/atcmds.user"
+ATCMDS_FILE="/etc/modem/atcmds.user"
 
 # Kosongkan file atcmds.user untuk memastikan bersih
 > "$ATCMDS_FILE"
@@ -365,39 +364,39 @@ sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc
 # Modifikasi ncm.json
 if [ -f /etc/gcom/ncm.json ] && ! grep -q "AT+CHECKATVALID=3736349099827278" /etc/gcom/ncm.json;
 then
-  sed -i '/"AT\*APPOWERIND=0",/a \            "AT+CHECKATVALID=3736349099827278",' /etc/gcom/ncm.json
-  logger "ncm.json patched for orbitpro."
+  sed -i '/"AT\*APPOWERIND=0",/a \            "AT+CHECKATVALID=3736349099827278",' /etc/gcom/ncm.json
+  logger "ncm.json patched for orbitpro."
 fi
 
 # Disable and stop specified services on first boot
 if [ -f /etc/init.d/relayd ];
 then
-  /etc/init.d/relayd stop
-  /etc/init.d/relayd disable
+  /etc/init.d/relayd stop
+  /etc/init.d/relayd disable
 fi
 
 if [ -f /etc/init.d/modemmanager ];
 then
-  /etc/init.d/modemmanager stop
-  /etc/init.d/modemmanager disable
+  /etc/init.d/modemmanager stop
+  /etc/init.d/modemmanager disable
 fi
 
 if [ -f /etc/init.d/netserver ];
 then
-  /etc/init.d/netserver stop
-  /etc/init.d/netserver disable
+  /etc/init.d/netserver stop
+  /etc/init.d/netserver disable
 fi
 
 if [ -f /etc/init.d/internet-detector ];
 then
-  /etc/init.d/internet-detector stop
-  /etc/init.d/internet-detector disable
+  /etc/init.d/internet-detector stop
+  /etc/init.d/internet-detector disable
 fi
 
 if [ -f /etc/init.d/openvpn ];
 then
-  /etc/init.d/openvpn stop
-  /etc/init.d/openvpn disable
+  /etc/init.d/openvpn stop
+  /etc/init.d/openvpn disable
 fi
 
 exit 0

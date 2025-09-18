@@ -153,7 +153,7 @@ uci -q batch <<-EOF >/dev/null
 EOF
 
 # Wait up to 30 seconds for the wireless config file to be created
-sleep 2
+sleep 3
 HOSTNAME=$(uci -q get system.@system[0].hostname)
 
 for RADIO in "radio0" "radio1"

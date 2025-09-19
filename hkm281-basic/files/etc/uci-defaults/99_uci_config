@@ -313,9 +313,9 @@ fi
 
 # Menambahkan Perintah AT Command
 
-ATCMDS_FILE="/etc/modem/atcmds.user"
+ATCMDS_FILE="/etc/modem/atcmmds.user"
 
-# Kosongkan file atcmds.user untuk memastikan bersih
+# Kosongkan file atcmmds.user untuk memastikan bersih
 > "$ATCMDS_FILE"
 
 # Isi file dengan daftar perintah AT baru

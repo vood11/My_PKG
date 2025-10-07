@@ -4,7 +4,7 @@
 
 uci -q batch <<-EOF >/dev/null
   # System properties
-  set system.@system[0].hostname="ORBITPRO-HKM281"
+  set system.@system[0].hostname="SILTESA-CM4"
   set system.@system[0].conloglevel="8"
   set system.@system[0].cronloglevel="9"
 
@@ -23,23 +23,28 @@ uci -q batch <<-EOF >/dev/null
   # Luci language
   set luci.main.lang="auto"
 
-  # WWAN interface
-  set network.wwan='interface'
-  set network.wwan.device='/dev/ttyACM0'
-  set network.wwan.proto='ncm'
-  set network.wwan.pdptype='IP'
-  set network.wwan.apn='internet'
-  set network.wwan.username=''
-  set network.wwan.password=''
-  set network.wwan.ipv6='auto'
-  set network.wwan.delay='8'
-  set network.wwan.metric='30'
+  #Add interface & firewall MM
+  uci -q set network.mm=interface
+  uci -q set network.mm.proto='modemmanager'
+  uci -q set network.mm.device="$(readlink -f /sys/class/usbmisc/cdc-wdm0/device | sed "s|/$(readlink -f /sys/class/usbmisc/cdc-wdm0/device/ | awk -F '/' '{print $(NF)}')||g")"
+  uci -q set network.mm.apn='internet'
+  uci -q set network.mm.auth='none'
+  uci -q set network.mm.iptype='ipv4'
+  uci -q set network.mm.signalrate='10'
 
-  # OpenVPN interface
-  set network.openvpn='interface'
-  set network.openvpn.proto='none'
-  set network.openvpn.device='tun0'
-  set network.openvpn.metric='10'
+  if ! grep -q "eth1" /etc/config/network; then
+    uci -q set network.wan1=interface
+    uci -q set network.wan1.proto='dhcp'
+    uci -q set network.wan1.device='eth1'
+  else
+    uci -q set network.wan1=interface
+    uci -q set network.wan1.proto='dhcp'
+    uci -q set network.wan1.device='eth2'
+  fi
+
+  uci -q set network.wan2=interface
+  uci -q set network.wan2.proto='dhcp'
+  uci -q set network.wan2.device='usb0'
 
   # SMS Tool JS
   set sms_tool_js.@sms_tool_js[0].ledtimeon='1'
@@ -49,13 +54,13 @@ uci -q batch <<-EOF >/dev/null
   set sms_tool_js.@sms_tool_js[0].pdu='0'
   set sms_tool_js.@sms_tool_js[0].prestart='6'
   set sms_tool_js.@sms_tool_js[0].ledtype='D'
-  set sms_tool_js.@sms_tool_js[0].readport='/dev/ttyACM0'
-  set sms_tool_js.@sms_tool_js[0].sendport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].readport='/dev/ttyUSB2'
+  set sms_tool_js.@sms_tool_js[0].sendport='/dev/ttyUSB2'
   set sms_tool_js.@sms_tool_js[0].pnumber='63'
   set sms_tool_js.@sms_tool_js[0].prefix='0'
   set sms_tool_js.@sms_tool_js[0].information='0'
-  set sms_tool_js.@sms_tool_js[0].ussdport='/dev/ttyACM0'
-  set sms_tool_js.@sms_tool_js[0].atport='/dev/ttyACM0'
+  set sms_tool_js.@sms_tool_js[0].ussdport='/dev/ttyUSB2'
+  set sms_tool_js.@sms_tool_js[0].atport='/dev/ttyUSB2'
   set sms_tool_js.@sms_tool_js[0].smsled='red:status'
   set sms_tool_js.@sms_tool_js[0].storage='ME'
   set sms_tool_js.@sms_tool_js[0].mergesms='0'
@@ -78,7 +83,7 @@ uci -q batch <<-EOF >/dev/null
   # Modemband
   set modemband.@modemband[0]='modemband'
   set modemband.@modemband[0].iface='wwan'
-  set modemband.@modemband[0].set_port='/dev/ttyACM0'
+  set modemband.@modemband[0].set_port='/dev/ttyUSB2'
   set modemband.@modemband[0].wanrestart='0'
   set modemband.@modemband[0].modemrestart='0'
   set modemband.@modemband[0].notify='0'
@@ -87,7 +92,7 @@ uci -q batch <<-EOF >/dev/null
   set 3ginfo.@3ginfo[0]='3ginfo'
   set 3ginfo.@3ginfo[0].website='https://cacombos.com/'
   set 3ginfo.@3ginfo[0].network='wwan'
-  set 3ginfo.@3ginfo[0].device='/dev/ttyACM0'
+  set 3ginfo.@3ginfo[0].device='/dev/ttyUSB2'
 
   # IRQBalance
   set irqbalance.irqbalance=irqbalance
@@ -321,38 +326,39 @@ ATCMDS_FILE="/etc/modem/atcmmds.user"
 # Isi file dengan daftar perintah AT baru
 cat << EOF > "$ATCMDS_FILE"
 Check signal strength;AT+CSQ
-Reboot Save Modem;AT+CFUN=1,1
-Disable modem;AT+CFUN=0
-Enable modem;AT+CFUN=1
-Reset modem;at+reset
-Check IMEI;AT+CGSN
-Check Baseband Version;AT*READVER
-Mode Auto;AT+ZSNT=0,0,0
-3G Only;AT+ZSNT=1,0,0
-3G Only;AT+ZSNT=2,0,0
-4G Only;AT+ZSNT=6,0,0
-3G&4G;AT+ZSNT=7,0,0
-LTE DHCP Lease (2jam);AT+ZDHCPLEASE=43200
-Background Cell Searching (30s);AT+BGLTEPLMN=1,30
-Received Incoming SMS;AT+CNMI=1,1,2,1,1
-Carrier Aggregation Info;AT+ZCAINFO?
-Band Info;AT*LTEBAND?
-Locked Band Info;AT+ZNLOCKBAND?
-Current Cell Info;AT+ZCELLINFO?
-Lock Band B1;AT+ZNLOCKBAND=1,0,1,0
-Lock Band B3;AT+ZNLOCKBAND=1,0,4,0
-Lock Band B5;AT+ZNLOCKBAND=1,0,10,0
-Lock Band B8;AT+ZNLOCKBAND=1,0,80,0
-Lock Band B40;AT+ZNLOCKBAND=1,0,8000000000,0
-Lock Band B1&B3;AT+ZNLOCKBAND=1,0,5,0
-Lock Band B1&B5;AT+ZNLOCKBAND=1,0,11,0
-Lock Band B1&B8;AT+ZNLOCKBAND=1,0,81,0
-Lock Band B1&B40;AT+ZNLOCKBAND=1,0,8000000001,0
-Lock Band B3&B5;AT+ZNLOCKBAND=1,0,14,0
-Lock Band B3&B8;AT+ZNLOCKBAND=1,0,84,0
-Lock Band B3&B40;AT+ZNLOCKBAND=1,0,8000000004,0
-Lock Band B5&B8;AT+ZNLOCKBAND=1,0,90,0
-Lock Band B5&B40;AT+ZNLOCKBAND=1,0,8000000010,0
+SIERRA_Mengakses AT command yang protected;AT!ENTERCND="A710"
+FIBOCOM_Restart&Simpan Pengaturan Modem;AT+CFUN=1,1
+FIBOCOM_Reset Modem;AT+RESET
+FIBOCOM_Cek QOS;AT+CGEQNEG
+FIBOCOM_Cek CA Band/Band Aktif;AT+XACT?
+FIBOCOM_Cek Current Band;AT+XCCINFO?
+FIBOCOM_WCDMA Only;AT+XACT=1,,,0
+FIBOCOM_LTE Only;AT+XACT=2,,,0
+FIBOCOM_WCDMA & LTE All Band;AT+XACT=4,,,0
+FIBOCOM_Lock B1;AT+XACT=2,,,101
+FIBOCOM_Lock B3;AT+XACT=2,,,103
+FIBOCOM_Lock B8;AT+XACT=2,,,108
+FIBOCOM_Lock B5;AT+XACT=2,,,105
+FIBOCOM_Lock B40;AT+XACT=2,,,140
+FIBOCOM_Lock B1&B3;AT+XACT=2,,,101,103
+FIBOCOM_Lock Band Indo Only;AT+XACT=2,,,101,103,105,108,140
+FIBOCOM_Cek Versi Firmware;AT+GTPKGVER?
+FIBOCOM_Cek IMEI;AT+CGSN?
+FIBOCOM_Cek Daftar Nama APN Aktif;at+cgdcont?
+FIBOCOM_Cek Slot APN & Status;AT+CGACT?
+FIBOCOM_Mengaktifkan APN 1;AT+CGACT=1,1
+FIBOCOM_Menonaktifkan APN 1;AT+CGACT=1,0
+FIBOCOM_Membuat Profile APN di Slot 2;AT+CGDCONT=2,"IP","home"
+FIBOCOM_Mode Pesawat;AT+CFUN=4
+FIBOCOM_Mode Normal;AT+CFUN=1
+FIBOCOM_Cek Protokol MBIM or NCM;AT+GTUSBMODE?
+FIBOCOM_Select Protokol ke NCM;AT+GTUSBMODE=0
+FIBOCOM_Select Protokol ke MBIM;AT+GTUSBMODE=7
+FIBOCOM_Cek Sinyal RSRQ & RSRP;AT+XCESQ?
+FIBOCOM_Cek Voltase Modem;AT+CBC
+FIBOCOM_Cek FCCLock;at@nvm:fix_cat_fcclock.fcclock_mode?
+FIBOCOM_Unlock FCC;at@nvm:fix_cat_fcclock.fcclock_mode=0
+FIBOCOM_Save Unlock FCC;at@store_nvm(fix_cat_fcclock)
 EOF
 
 logger "AT commands file has been cleared and populated with default commands."
@@ -361,36 +367,11 @@ sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
 sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
 sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc/shadow
 
-# Modifikasi ncm.json
-if [ -f /etc/gcom/ncm.json ] && ! grep -q "AT+CHECKATVALID=3736349099827278" /etc/gcom/ncm.json;
-then
-  sed -i '/"AT\*APPOWERIND=0",/a \            "AT+CHECKATVALID=3736349099827278",' /etc/gcom/ncm.json
-  logger "ncm.json patched for orbitpro."
-fi
-
 # Disable and stop specified services on first boot
 if [ -f /etc/init.d/relayd ];
 then
   /etc/init.d/relayd stop
   /etc/init.d/relayd disable
-fi
-
-if [ -f /etc/init.d/modemmanager ];
-then
-  /etc/init.d/modemmanager stop
-  /etc/init.d/modemmanager disable
-fi
-
-if [ -f /etc/init.d/netserver ];
-then
-  /etc/init.d/netserver stop
-  /etc/init.d/netserver disable
-fi
-
-if [ -f /etc/init.d/internet-detector ];
-then
-  /etc/init.d/internet-detector stop
-  /etc/init.d/internet-detector disable
 fi
 
 if [ -f /etc/init.d/openvpn ];

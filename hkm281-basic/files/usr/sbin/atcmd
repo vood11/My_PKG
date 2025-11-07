@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Copyright (c) 2025 DBAI
+
+ARG_AT="$1"
+
+show_usage() {
+    cat <<EOF
+Usage: $(basename "$0") <AT Command>
+
+Example:
+  $(basename "$0") AT+CLAC
+
+EOF
+}
+
+error_exit() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+# Function to test if device responds to AT commands
+test_device() {
+    local device="$1"
+    # Send AT command and check if we get a response (not "No response from modem")
+    local response=$(sms_tool -d "$device" at "AT" 2>&1)
+    if echo "$response" | grep -qv "No response from modem"; then
+        return 0
+    fi
+    return 1
+}
+
+# Check if modem uses ttyACM (L850-GL & L860-GL)
+uses_tty_acm() {
+    # Check for L850-GL & L860-GL modem IDs
+    if lsusb | grep -qE "8087:095a|2cb7:0007"; then
+        return 0
+    fi
+    return 1
+}
+
+# Find working AT command device
+find_at_device() {
+    # Check if modem uses ttyACM
+    if uses_tty_acm; then
+        # Try ttyACM0 first for L850/L860
+        if [ -e "/dev/ttyACM0" ]; then
+            if test_device "/dev/ttyACM0"; then
+                echo "/dev/ttyACM0"
+                return 0
+            fi
+        fi
+        # Fallback to other ttyACM devices
+        for device in /dev/ttyACM*; do
+            [ -e "$device" ] || [ "$device" = "/dev/ttyACM0" ] && continue
+            if test_device "$device"; then
+                echo "$device"
+                return 0
+            fi
+        done
+        # Last resort: try ttyUSB
+        for device in /dev/ttyUSB*; do
+            [ -e "$device" ] || continue
+            if test_device "$device"; then
+                echo "$device"
+                return 0
+            fi
+        done
+    else
+        # Try ttyUSB1 first for other modems
+        if [ -e "/dev/ttyUSB1" ]; then
+            if test_device "/dev/ttyUSB1"; then
+                echo "/dev/ttyUSB1"
+                return 0
+            fi
+        fi
+        # Fallback to other ttyUSB devices
+        for device in /dev/ttyUSB*; do
+            [ -e "$device" ] || [ "$device" = "/dev/ttyUSB1" ] && continue
+            if test_device "$device"; then
+                echo "$device"
+                return 0
+            fi
+        done
+        # Last resort: try ttyACM
+        for device in /dev/ttyACM*; do
+            [ -e "$device" ] || continue
+            if test_device "$device"; then
+                echo "$device"
+                return 0
+            fi
+        done
+    fi
+    
+    return 1
+}
+
+if [ $# -ne 1 ]; then
+    show_usage
+    error_exit "Exactly one AT command must be specified."
+fi
+
+if ! echo "$ARG_AT" | grep -qi '^AT'; then
+    show_usage
+    error_exit "Invalid AT command. It must start with 'AT'."
+fi
+
+# Find working device
+TTY_DEVICE=$(find_at_device)
+
+if [ -z "$TTY_DEVICE" ]; then
+    error_exit "No working AT command device found (tried /dev/ttyUSB* and /dev/ttyACM*)"
+fi
+
+sms_tool -d "$TTY_DEVICE" at "$ARG_AT"
+
+exit 0

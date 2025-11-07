@@ -2,9 +2,36 @@
 #
 # Copyright (c) 2025 DBAI
 
+# Install IPK packages from /root/ipk/
+if [ -d "/root/ipk" ] && [ -n "$(ls /root/ipk/*.ipk 2>/dev/null)" ]; then
+    cd /root/ipk
+    opkg install *.ipk --force-reinstall
+    rm -rf /root/ipk/*.ipk
+    logger "All IPK packages installed successfully"
+fi
+
+# Auto rename Broadcom firmware files for Orange Pi CM4
+BRCM_DIR="/lib/firmware/brcm"
+if [ -d "$BRCM_DIR" ]; then
+    for file in "$BRCM_DIR"/brcmfmac43456-sdio.*; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            # Extract extension after brcmfmac43456-sdio
+            extension="${filename#brcmfmac43456-sdio}"
+            newname="brcmfmac43456-sdio.rockchip,rk3566-orangepi-cm4${extension}"
+            
+            # Only rename if new file doesn't exist
+            if [ ! -f "$BRCM_DIR/$newname" ]; then
+                cp "$file" "$BRCM_DIR/$newname"
+                logger "Copied firmware: $filename -> $newname"
+            fi
+        fi
+    done
+fi
+
 uci -q batch <<-EOF >/dev/null
   # System properties
-  set system.@system[0].hostname="SILTESA-CM4"
+  set system.@system[0].hostname="IMBA"
   set system.@system[0].conloglevel="8"
   set system.@system[0].cronloglevel="9"
 
@@ -20,31 +47,34 @@ uci -q batch <<-EOF >/dev/null
   add_list system.ntp.server="0.sg.pool.ntp.org"
   add_list system.ntp.server="0.pool.ntp.org"
 
-  # Luci language
-  set luci.main.lang="auto"
+  # Luci language & Theme
+  set luci.main.lang="en"
 
   #Add interface & firewall MM
-  uci -q set network.mm=interface
-  uci -q set network.mm.proto='modemmanager'
-  uci -q set network.mm.device="$(readlink -f /sys/class/usbmisc/cdc-wdm0/device | sed "s|/$(readlink -f /sys/class/usbmisc/cdc-wdm0/device/ | awk -F '/' '{print $(NF)}')||g")"
-  uci -q set network.mm.apn='internet'
-  uci -q set network.mm.auth='none'
-  uci -q set network.mm.iptype='ipv4'
-  uci -q set network.mm.signalrate='10'
+  set network.mm=interface
+  set network.mm.proto='modemmanager'
+  set network.mm.device="$(readlink -f /sys/class/usbmisc/cdc-wdm0/device | sed "s|/$(readlink -f /sys/class/usbmisc/cdc-wdm0/device/ | awk -F '/' '{print $(NF)}')||g")"
+  set network.mm.apn='internet'
+  set network.mm.auth='none'
+  set network.mm.iptype='ipv4'
+  set network.mm.signalrate='10'
+  set network.mm.force_connection='1'
 
   if ! grep -q "eth1" /etc/config/network; then
-    uci -q set network.wan1=interface
-    uci -q set network.wan1.proto='dhcp'
-    uci -q set network.wan1.device='eth1'
+    set network.wan1=interface
+    set network.wan1.proto='dhcp'
+    set network.wan1.device='eth1'
   else
-    uci -q set network.wan1=interface
-    uci -q set network.wan1.proto='dhcp'
-    uci -q set network.wan1.device='eth2'
+    set network.wan1=interface
+    set network.wan1.proto='dhcp'
+    set network.wan1.device='eth2'
   fi
+  
+  set network.wan2=interface
+  set network.wan2.proto='dhcp'
+  set network.wan2.device='usb0'
 
-  uci -q set network.wan2=interface
-  uci -q set network.wan2.proto='dhcp'
-  uci -q set network.wan2.device='usb0'
+  set firewall.@zone[1].network="$(uci -q get firewall.@zone[1].network) wan1 wan2 mm"
 
   # SMS Tool JS
   set sms_tool_js.@sms_tool_js[0].ledtimeon='1'
@@ -52,15 +82,16 @@ uci -q batch <<-EOF >/dev/null
   set sms_tool_js.@sms_tool_js[0].lednotify='0'
   set sms_tool_js.@sms_tool_js[0].checktime='10'
   set sms_tool_js.@sms_tool_js[0].pdu='0'
+  set sms_tool_js.@sms_tool_js[0].storage='SM'
   set sms_tool_js.@sms_tool_js[0].prestart='6'
   set sms_tool_js.@sms_tool_js[0].ledtype='D'
-  set sms_tool_js.@sms_tool_js[0].readport='/dev/ttyUSB2'
-  set sms_tool_js.@sms_tool_js[0].sendport='/dev/ttyUSB2'
+  set sms_tool_js.@sms_tool_js[0].readport='/dev/ttyUSB1'
+  set sms_tool_js.@sms_tool_js[0].sendport='/dev/ttyUSB1'
   set sms_tool_js.@sms_tool_js[0].pnumber='63'
   set sms_tool_js.@sms_tool_js[0].prefix='0'
   set sms_tool_js.@sms_tool_js[0].information='0'
-  set sms_tool_js.@sms_tool_js[0].ussdport='/dev/ttyUSB2'
-  set sms_tool_js.@sms_tool_js[0].atport='/dev/ttyUSB2'
+  set sms_tool_js.@sms_tool_js[0].ussdport='/dev/ttyUSB1'
+  set sms_tool_js.@sms_tool_js[0].atport='/dev/ttyUSB1'
   set sms_tool_js.@sms_tool_js[0].smsled='red:status'
   set sms_tool_js.@sms_tool_js[0].storage='ME'
   set sms_tool_js.@sms_tool_js[0].mergesms='0'
@@ -82,17 +113,16 @@ uci -q batch <<-EOF >/dev/null
 
   # Modemband
   set modemband.@modemband[0]='modemband'
-  set modemband.@modemband[0].iface='wwan'
-  set modemband.@modemband[0].set_port='/dev/ttyUSB2'
+  set modemband.@modemband[0].iface='mm'
+  set modemband.@modemband[0].set_port='/dev/ttyUSB1'
   set modemband.@modemband[0].wanrestart='0'
   set modemband.@modemband[0].modemrestart='0'
   set modemband.@modemband[0].notify='0'
 
   # 3ginfo
   set 3ginfo.@3ginfo[0]='3ginfo'
-  set 3ginfo.@3ginfo[0].website='https://cacombos.com/'
-  set 3ginfo.@3ginfo[0].network='wwan'
-  set 3ginfo.@3ginfo[0].device='/dev/ttyUSB2'
+  set 3ginfo.@3ginfo[0].network='mm'
+  set 3ginfo.@3ginfo[0].device='/dev/ttyUSB1'
 
   # IRQBalance
   set irqbalance.irqbalance=irqbalance
@@ -104,28 +134,25 @@ uci -q batch <<-EOF >/dev/null
   set internet-detector.config.mode='0'
 
   # Custom Commands (target /etc/config/luci)
-  set luci.aktivasi='command'
-  set luci.aktivasi.name='Aktivasi Modem'
-  set luci.aktivasi.command='sed -i '\''s/3736349099827278/999999999/'\'' /etc/gcom/ncm.json'
-
   set luci.cek_bb='command'
-  set luci.cek_bb.name='Cek Base Band'
-  set luci.cek_bb.command='atcmd AT*READVER'
+  set luci.cek_bb.name='RESTART MODEM'
+  set luci.cek_bb.command='atcmd AT+CFUN=1,1'
 
   set luci.remove_lock='command'
-  set luci.remove_lock.name='Remove Frequency/Cellid Lock'
-  set luci.remove_lock.command='atcmd AT*CELL=0'
+  set luci.remove_lock.name='Cek QOS Fibocom L8x0'
+  set luci.remove_lock.command='atcmd AT+CGEQNEG'
 
   set luci.set_lock='command'
-  set luci.set_lock.name='Lock Frequency/Cellid AT*CELL=(Mode),(Act),(Band),(Freq),(Cellid)'
-  set luci.set_lock.command='atcmd AT*CELL=1,3,3,1850,111'
+  set luci.set_lock.name='Cek FTM Lock DW5821e'
+  set luci.set_lock.command='atcmd at+ftm?'
 
   set luci.lock_b1_b3='command'
-  set luci.lock_b1_b3.name='Lock B1 & B3'
-  set luci.lock_b1_b3.command='atcmd AT+ZNLOCKBAND=1,0,5,0'
-  
-  # Firewall for WWAN
-  add_list firewall.@zone[1].network='wwan'
+  set luci.lock_b1_b3.name='Cek FCC Lock L850-GL'
+  set luci.lock_b1_b3.command='atcmd at@nvm:fix_cat_fcclock.fcclock_mode?'
+
+  set luci.lock_b1_b3='command'
+  set luci.lock_b1_b3.name='Restart ModemManager'
+  set luci.lock_b1_b3.command='mmcli -m any -r'
 
   # Firewall for VPN Zone
   add firewall zone
@@ -144,7 +171,6 @@ uci -q batch <<-EOF >/dev/null
   # Apply all UCI changes
   commit system
   commit ntp
-  commit luci
   commit network
   commit firewall
   commit sms_tool_js
@@ -156,33 +182,126 @@ uci -q batch <<-EOF >/dev/null
   commit luci_commands
 EOF
 
-# Wait up to 30 seconds for the wireless config file to be created
+# Set Luci Theme
+uci -q set luci.main.lang="auto"
+! grep -q "kucat" /etc/config/luci || uci -q set luci.main.mediaurlbase='/luci-static/kucat'
+uci -q commit luci
+
+# Fibocom Modem interface
+if grep -q "8087 ProdID=095a" /sys/kernel/debug/usb/devices ; then
+    uci -q batch <<-EOF >/dev/null
+	delete network.mm
+	set network.wan1.device='wwan0'
+	
+	set network.xmm=interface
+	set network.xmm.proto='xmm'
+	set network.xmm.device='/dev/ttyACM0'
+	set network.xmm.apn='internet'
+	set network.xmm.auth='auto'
+	set network.xmm.pdp='ipv4v6'
+	add_list network.xmm.dns='8.8.8.8'
+	add_list network.xmm.dns='8.8.4.4'
+	commit network
+	
+	add_list firewall.@zone[1].network='xmm'
+	commit firewall
+	EOF
+
+    if [ -f "/etc/config/3ginfo" ]; then
+        uci -q batch <<-EOF >/dev/null
+	set 3ginfo.@3ginfo[0].network='@xmm'
+	commit 3ginfo
+	EOF
+    fi
+    
+elif grep -qE "FM350-GL|0e8d ProdID=2000|0e8d ProdID=7101|0e8d ProdID=7126|0e8d ProdID=7127" /sys/kernel/debug/usb/devices ; then
+    ATC_DEVICE='/dev/ttyUSB1'
+    
+    if grep -q "0e8d ProdID=7126" /sys/kernel/debug/usb/devices ; then
+        ATC_DEVICE='/dev/ttyUSB1'
+    fi
+    
+    uci -q batch <<-EOF >/dev/null
+	delete network.mm
+	set network.wan1.device='wwan0'
+	
+	set network.atc=interface
+	set network.atc.proto='atc'
+	set network.atc.device='$ATC_DEVICE'
+	set network.atc.apn='internet'
+	set network.atc.auth='0'
+	set network.atc.pdp='IP'
+	set network.atc.atc_debug='0'
+	add_list network.atc.dns='8.8.8.8'
+	add_list network.atc.dns='8.8.4.4'
+	commit network
+	
+	add_list firewall.@zone[1].network='atc'
+	commit firewall
+	EOF
+    
+    if [ -f "/etc/config/3ginfo" ]; then
+        uci -q batch <<-EOF >/dev/null
+	set 3ginfo.@3ginfo[0].network='@atc'
+	commit 3ginfo
+	EOF
+    fi
+    
+fi
+
+# Overview credit
+DIS=$(grep "PRETTY_NAME" /usr/lib/os-release | awk -F '"' '{print $2}')
+sed -i "s/.*OPENWRT_RELEASE.*/OPENWRT_RELEASE=\"$DIS IMBAPACK-2K26\"/" /usr/lib/os-release
+sed -i "s/\/ ':'')+(luciversion||'')/ ':'')/" /www/luci-static/resources/view/status/include/10_system.js
+
+
+# Configure WLAN
 sleep 3
+
 HOSTNAME=$(uci -q get system.@system[0].hostname)
 
-for RADIO in "radio0" "radio1"
-do
-  uci -q get wireless."$RADIO" || continue
-  BAND=$(uci -q get wireless.$RADIO.band)
-  uci set wireless."$RADIO".disabled="0"
-  if [ "$BAND" = "2g" ];then
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}"
-    uci set wireless.default_"$RADIO".ifname="wifi-2g"
-  else
-    uci set wireless.default_"$RADIO".ssid="${HOSTNAME}-5G"
-    uci set wireless.default_"$RADIO".ifname="wifi-5g"
-  fi
-  uci set wireless.default_"$RADIO".encryption="psk2"
-  uci set wireless.default_"$RADIO".key="dbai2k25"
-  uci -q commit wireless
+if [ -z "$HOSTNAME" ]; then
+    HOSTNAME="OpenWrt"
+fi
+
+RADIO_5G=""
+RADIO_2G=""
+
+for section in $(uci show wireless | grep '=wifi-device' | cut -d'.' -f2 | cut -d'=' -f1); do
+    
+    path=$(uci -q get wireless."$section".path)
+    
+    if echo "$path" | grep -q 'pcie'; then
+        RADIO_5G="$section"
+        
+    elif echo "$path" | grep -q 'mmc'; then
+        RADIO_2G="$section"
+    fi
 done
 
-# MEMBUAT SCRIPT LITE WATCHDOG
-cat <<'EOF' > /etc/lite_watchdog.user
-#!/bin/sh
-ifdown wwan && ifup wwan
-EOF
-chmod +x /etc/lite_watchdog.user
+if [ -n "$RADIO_5G" ]; then
+    uci set wireless."$RADIO_5G".band='5g'
+    uci set wireless."$RADIO_5G".channel='36'
+    uci set wireless."$RADIO_5G".cell_density='0'
+    uci set wireless."$RADIO_5G".disabled='0' 
+    uci set wireless.default_"$RADIO_5G".ssid="${HOSTNAME}-AX"
+    uci set wireless.default_"$RADIO_5G".encryption='psk2'
+    uci set wireless.default_"$RADIO_5G".key='dbai2k26'
+fi
+
+if [ -n "$RADIO_2G" ]; then
+    uci set wireless."$RADIO_2G".band='2g'
+    uci set wireless."$RADIO_2G".htmode='HT20'
+    uci set wireless."$RADIO_2G".channel='6'
+    uci set wireless."$RADIO_2G".country='CN'
+    uci set wireless."$RADIO_2G".cell_density='0'
+    uci set wireless."$RADIO_2G".disabled='0'
+    uci set wireless.default_"$RADIO_2G".ssid="${HOSTNAME}-AC"
+    uci set wireless.default_"$RADIO_2G".encryption='psk2'
+    uci set wireless.default_"$RADIO_2G".key='dbai2k26'
+fi
+
+uci -q commit wireless
 
 # KONFIGURASI TTYD TANPA LOGIN
 if ! grep -q "/bin/login -f root" /etc/config/ttyd; then
@@ -193,141 +312,188 @@ if ! grep -q "/bin/login -f root" /etc/config/ttyd; then
   echo -e "helmilog : Terminal ttyd patched..."
 fi
 
-# Cek dan Patch OpenClash
-if [ -f /etc/config/openclash ];
-then
-  logger "OpenClash detected, applying patches..."
+# Set 3ginfo-lite
+if [ -f "/etc/config/3ginfo" ]; then
+	[ ! -f "/usr/share/3ginfo-lite/modem/usb/0e8d7126" ] && cp /usr/share/3ginfo-lite/modem/usb/2cb70104 /usr/share/3ginfo-lite/modem/usb/0e8d7126
+	[ ! -f "/usr/share/3ginfo-lite/modem/usb/1b7c1910" ] && cp /usr/share/3ginfo-lite/modem/usb/413c81d7 /usr/share/3ginfo-lite/modem/usb/1b7c1910
+	[ ! -f "/usr/share/3ginfo-lite/modem/usb/1bc71911" ] && cp /usr/share/3ginfo-lite/modem/usb/413c81d7 /usr/share/3ginfo-lite/modem/usb/1bc71911 
+	[ ! -f "/usr/share/3ginfo-lite/modem/usb/413c81e0" ] && cp /usr/share/3ginfo-lite/modem/usb/413c81d7 /usr/share/3ginfo-lite/modem/usb/413c81e0
+	[ ! -f "/usr/share/3ginfo-lite/modem/usb/413c81e4" ] && cp /usr/share/3ginfo-lite/modem/usb/413c81d7 /usr/share/3ginfo-lite/modem/usb/413c81e4
 
-  # Patch OpenClash codes
-  export CHKFL="/usr/lib/lua/luci/view/openclash/status.htm"
-    sed -i "s#https://img.shields.io/badge/Wiki--lightgrey?logo=GitBook&style=social#/luci-static/resources/openclash/Wiki.svg#g" $CHKFL
-    sed -i "s#https://img.shields.io/badge/Tutorials--lightgrey?logo=Wikipedia&style=social#/luci-static/resources/openclash/Tutorials.svg#g" $CHKFL
-    sed -i "s#https://img.shields.io/badge/Star--lightgrey?logo=github&style=social#/luci-static/resources/openclash/Star.svg#g" $CHKFL
-    sed -i "s#https://img.shields.io/badge/Telegram--lightgrey?logo=Telegram&style=social#/luci-static/resources/openclash/Telegram.svg#g" $CHKFL
-    sed -i "s#https://img.shields.io/badge/Sponsor--lightgrey?logo=ko-fi&style=social#/luci-static/resources/openclash/Sponsor.svg#g" $CHKFL
-    
-    logger "  Clash status patched..."
-  unset CHKFL
+	uci -q set 3ginfo.@3ginfo[0].network='@mm'
+	uci -q set 3ginfo.@3ginfo[0].device='/dev/ttyUSB1'
+	uci -q commit 3ginfo
+fi
+# Fix Temp
+if [ -f "/usr/libexec/rpcd/luci.temp-status" ]; then
+	INCLUDE="/www/luci-static/resources/view/status/include"
+	mv $INCLUDE/*temp.js $INCLUDE/11_temp.js
+fi
 
-  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
-  if [ -e "$CHKFL" ] && ! grep -q "Helmi Amirudin" $CHKFL; then
-    sed -i 's#m = SimpleForm("openclash",translate("OpenClash"))#\n-- Helmi Amirudin\nm = SimpleForm("openclash")#g' $CHKFL
-    sed -i 's#m.title = translate#\n-- Helmi Amirudin\nm.title = translate#g' $CHKFL
-    sed -i "/m.title =/c\m.title = false" $CHKFL
-    sed -i "/m.description =/c\m.description = false" $CHKFL
-    #--Remover/renamer credits section
-    #remove = remove sections, show_name = show name only
-    OCDEV="remove"
-    DEVHTM="/usr/lib/lua/luci/view/openclash/developer.htm"
-    if [ $OCDEV = "remove" ];
-then
-      sed -i "s#d =#-- d =#g" $CHKFL
-      sed -i "s#d.title#-- d.title#g" $CHKFL
-      sed -i "s#d.pageaction#-- d.pageaction#g" $CHKFL
-      sed -i "s#d.reset#-- d:reset#g" $CHKFL
-      sed -i "s#d.submit#-- d:submit#g" $CHKFL
-      sed -i "s#d:section#-- d:section#g" $CHKFL
-      sed -i "s#dler =#-- dler =#g" $CHKFL
-      sed -i "s#dler.pageaction#-- dler.pageaction#g" $CHKFL
-      sed -i "s#dler.reset#-- dler.reset#g" $CHKFL
-      sed -i "s#dler.submit#-- dler.submit#g" $CHKFL
-      sed -i "s#dler:section#-- dler:section#g" $CHKFL
-      [ -f $DEVHTM ] && mv $DEVHTM /usr/lib/lua/luci/view/openclash/config-edit-manager.htm
-    elif [ $OCDEV = "show_name" ];
-then
-      [ -f $DEVHTM ] && cp $DEVHTM $DEVHTM.bak
-      sed -i 's#onerror="return imgerrorfun(this,this.src)"##g' /usr/lib/lua/luci/view/openclash/developer.htm
-      sed -i "s#https://ava#null//ava#g" /usr/lib/lua/luci/view/openclash/developer.htm
-      sed -i "s#data:image#null//data:image#g" /usr/lib/lua/luci/view/openclash/developer.htm
-    fi
-    sed -i "s#s:section#-- s:section#g" $CHKFL
-    cp /usr/lib/lua/luci/view/openclash/myip.htm /usr/lib/lua/luci/view/openclash/myip.htm.bak
-    echo "<\!DOCTYPE html>\n<html>\n</html>" > /usr/lib/lua/luci/view/openclash/myip.htm
-    logger "  Clash client patched..."
-  fi
-  unset CHKFL
+# TTL 65
+cat << 'EOF' > /etc/nftables.d/11-ttl.nft
+chain mangle_postrouting_ttl65 {
+      type filter hook postrouting priority 300; policy accept;
+ 	counter ip ttl set 65 
+}
 
-  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/log.lua"
-  if [ -f "$CHKFL" ] && ! grep -q "\-\- m:append(Template" $CHKFL; then
-    ptch_oc_lua="log\|config-subscribe\|servers\|settings\|groups-config\|proxy-provider-config\|rule-providers-config\|config-overwrite"
-    sed -i 's#m:append(Template("openclash/toolbar_show"))#-- m:append(Template("openclash/toolbar_show"))#g' $(grep -rli "openclash/toolbar_show" "/usr/lib/lua/luci/model/cbi/openclash" | grep "$ptch_oc_lua")
-    sed -i 's#proxy_form:append#-- proxy_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/proxy-provider-file-manage.lua
-    sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/rule-providers-file-manage.lua
-    sed -i 's#rule_form:append#-- rule_form:append#g' /usr/lib/lua/luci/model/cbi/openclash/game-rules-file-manage.lua
-    sed -i 's#\"Rule Providers and Groups\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers and Groups" "/usr/lib/lua/luci")
-    sed -i 's#\"Rule Providers Append\"#\"Rule Providers\"#g' $(grep -rli "Rule Providers Append" "/usr/lib/lua/luci")
-    sed -i 's#\"Servers and Groups\"#\"Proxies\"#g' $(grep -rli "Servers and Groups" "/usr/lib/lua/luci")
-    sed -i 's#\"Onekey Create \(Servers\&Groups manage\)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-    sed -i 's#\"Onekey Create (Servers\&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-    sed -i 's#\"Onekey Create (Servers&Groups manage)\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-    sed -i 's#\"Onekey Create\"#\"Proxies\"#g' $(grep -rli "Onekey Create" "/usr/lib/lua/luci")
-    sed -i 's#\"Global Settings\"#\"Settings\"#g' $(grep -rli "Global Settings" "/usr/lib/lua/luci")
-    sed -i 's#\"Plugin Settings\"#\"Settings\"#g' $(grep -rli "Plugin Settings" "/usr/lib/lua/luci")
-    sed -i 's#\"Overwrite Settings\"#\"More Settings\"#g' $(grep -rli "Overwrite Settings" "/usr/lib/lua/luci")
-    sed -i 's#Server Logs#Logs#g' $(grep -rli "Logs" "/usr/lib/lua/luci/")
-    logger "  Clash patched..."
-  fi
-  unset CHKFL
-
-  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-  if [[ ! -f "$CHKFL" ]]; then
-    cat << 'EOF' > $CHKFL
---
-local NXFS = require "nixio.fs"
-
-m = Map("openclash")
-s = m:section(SimpleSection, "openclash")
-m.pageaction = false
-s.anonymous = true
-m.template="openclash/developer"
-
-return m
-
+chain mangle_prerouting_ttl65 {
+      type filter hook prerouting priority 300; policy accept;
+ 	counter ip ttl set 65 
+}
 EOF
-    logger "  Clash server logs patched..."
-  fi
-  unset CHKFL
 
-  export CHKFL="/usr/lib/lua/luci/model/cbi/openclash/server-logs.lua"
-  if [[ ! -f "$CHKFL" ]] && ! grep -q "openclash/editor" $CHKFL; then
-    sed -i "s#openclash/editor#openclash/developer#g" $CHKFL
-    logger "  Clash editor patched..."
-  fi
-  unset CHKFL
+# Set Netdata
+if opkg list-installed | grep netdata > /dev/null; then
+	uci -q set netdata.@netdata[0].enabled='1'
+	uci -q commit nedata
+fi
 
-  export CHKFL="/usr/lib/lua/luci/view/openclash/update.htm"
-  if ! grep -q "/cgi-bin/luci/admin/services/openclash/backup" "$CHKFL"; then
-    sed -i 's#<%="backup"%>#<%="/cgi-bin/luci/admin/services/openclash/backup"%>#g' $CHKFL
-    sed -i 's#<%="backup_ex_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_ex_core"%>#g' $CHKFL
-    sed -i 's#<%="backup_only_core"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_core"%>#g' $CHKFL
-    sed -i 's#<%="backup_only_config"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_rule"%>#g' $CHKFL
-    sed -i 's#<%="backup_only_proxy"%>#<%="/cgi-bin/luci/admin/services/openclash/backup_only_proxy"%>#g' $CHKFL
-    logger "  Clash backup feature patched..."
-  fi
-  unset CHKFL
+# Set Vnstat2
+if opkg list-installed | grep luci-app-vnstat2 > /dev/null; then
+	uci -q set vnstat.@vnstat[0].interface='br-lan'
+	uci -q add_list vnstat.@vnstat[0].interface='wwan0'
+	uci -q add_list vnstat.@vnstat[0].interface='eth1'
+	uci -q commit vnstat
+		
+BRD=$(cat /etc/os-release | grep -i 'OPENWRT_BOARD'| awk -F '"' '{print $2}' | awk -F '/' '{print $1}')
+	if ! [ "$BRD" = "mediatek" ] || [ "$BRD" = "ipq40xx" ]; then
+	    mkdir -p /etc/vnstat
+	    sed -i 's/;DatabaseDir "\/var\/lib\/vnstat"/DatabaseDir "\/etc\/vnstat"/' /etc/vnstat.conf
+	fi
+	/etc/init.d/vnstat start
+fi
 
-  export CHKFL="/usr/share/openclash/openclash_update.sh"
-  if [ -f "$CHKFL" ] && ! grep -q "/bin/helmiwrt" $CHKFL; then
-    sed -i "s|/etc/init.d/openclash restart 2|/bin/helmiwrt\n   /etc/init.d/openclash restart 2|g" $CHKFL
-    logger "  Auto update patched..."
-  fi
-  unset CHKFL
-else
-  logger "OpenClash not detected, skipping patches."
+# Move 25-modemmanager-tty
+if [ -f "/etc/hotplug.d/tty/25-modemmanager-tty" ]; then
+	mkdir -p /etc/bak
+    mv /etc/hotplug.d/tty/25-modemmanager-tty /etc/bak/25-modemmanager-tty
+	#restore
+	#mv /etc/bak/25-modemmanager-tty /etc/hotplug.d/tty/25-modemmanager-tty
+	/etc/init.d/modemmanager stop
+    /etc/init.d/modemmanager start
+fi
+
+/etc/init.d/modemmanager restart
+/etc/init.d/modemmanager reload
+
+# Fix Temp Modeminfo (only if installed)
+if opkg list-installed | grep -q "luci-app-modeminfo"; then
+	if [ -f "/usr/share/modeminfo/scripts/DELL.at" ]; then
+		sed -i "s|AT+TEMP?; AT^TEMP?|AT^TEMP?; AT+TEMP?|" /usr/share/modeminfo/scripts/DELL.at
+	fi
+fi
+
+# Move tiny file manager (only if installed)
+if opkg list-installed | grep -q "luci-app-tinyfilemanager"; then
+	if [ -f "/usr/share/luci/menu.d/luci-app-tinyfilemanager.json" ]; then
+		sed -i -e '/"admin\/nas": {/,+7d' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
+		sed -i 's|/nas/|/system/|g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
+		uci -q add_list tinyfilemanager.@main[0].auth_users='root:$2y$10$TLasyNswvi/Y1v7tz8C8N.a6LKnM4gMDn70A9w76nWICzVoaS0B1G'
+		uci set tinyfilemanager.cfg017f6a.use_auth='0'
+	    uci -q commit tinyfilemanager
+	    /etc/init.d/tinyfilemanager restart
+	fi
+fi
+
+# Fix Openclash (only if installed)
+if opkg list-installed | grep -q "luci-app-openclash"; then
+	sed -i "s|option ifname 'utun'|option device 'utun'|" /etc/config/network
+
+	#STATUS="/usr/lib/lua/luci/view/openclash/status.htm"
+	DEV="/usr/lib/lua/luci/view/openclash/developer.htm"
+	MYIP="/usr/lib/lua/luci/view/openclash/myip.htm"
+	#IMG="/luci-static/resources/openclash/img"
+	CLIENT="/usr/lib/lua/luci/model/cbi/openclash/client.lua"
+	CONT="/usr/lib/lua/luci/controller/openclash.lua"
+
+	if ! grep -qE "\-\- s:section|\-\-s:section" $CLIENT
+	then
+		sed -i "s#s:section#-- s:section#g" $CLIENT
+		mv $MYIP $MYIP.bak
+		cat << 'EOF' > $MYIP
+<!DOCTYPE html>
+<html>
+</html>
+EOF
+	fi
+
+	if grep -q 'githubusercontent.com' $DEV
+	then
+		sed -i 's#translate("Credits")#translate("")#g' $CLIENT
+		mv $DEV $DEV.bak
+		cat << 'EOF' > $DEV
+<style>
+.developer_ {
+  text-align: justify;
+  text-align-last: justify;
+}
+</style>
+<fieldset class="cbi-section">
+    <div class="developer_">
+        <table width="100%"><tr><td>
+        <span id="_Dreamacro"><%:Dreamacro%></span>
+        <span id="_vernesong"><%:Vernesong%></span>
+        <span id="_frainzy1477"><%:Frainzy1477%></span>
+        <span id="_SukkaW"><%:SukkaW%></span>
+        <span id="_lhie1_dev"><%:lhie1_dev%></span>
+        <span id="_ConnersHua_dev"><%:ConnersHua_dev%></span>
+        <span id="_haishanh"><%:Haishanh%></span>
+        <span id="_MaxMind"><%:MaxMind%></span>
+        <span id="_FQrabbit"><%:FQrabbit%></span>
+        <span id="_Alecthw"><%:Alecthw%></span>
+        <span id="_Tindy_X"><%:Tindy_X%></span>
+        <span id="_lmc999"><%:lmc999%></span>
+        <span id="_dlercloud"><%:Dlercloud%></span>
+        <span id="_immortalwrt"><%:Immortalwrt%></span>
+        <span id="_MetaCubeX"><%:MetaCubeX%></span>
+        </td></tr></table>
+    </div>
+</fieldset>
+EOF
+	fi
+
+	if ! grep -q "Config Editor" $CONT && [ -f "/www/tinyfilemanager/index.php" ]; then
+	    sed -i '87 i\	entry({"admin", "services", "openclash", "editor"}, template("openclash/editor"),_("Config Editor"), 90).leaf = true' $CONT
+	    cat << EOF > /usr/lib/lua/luci/view/openclash/editor.htm
+<%+header%>
+<div class="cbi-map">
+<iframe id="editor" style="width: 100%; min-height: 100vh; border: none; border-radius: 2px;"></iframe>
+</div>
+<script type="text/javascript">
+document.getElementById("editor").src = "http://" + window.location.hostname + "/tinyfilemanager/index.php?p=etc/openclash";
+</script>
+<%+footer%>
+EOF
+	elif grep -q "Config Editor" $CONT && [ ! -f "/www/tinyfilemanager/index.php" ]; then
+		sed -i '/Config Editor/d' $CONT
+	fi
 fi
 
 # Menambahkan Perintah AT Command
 
-ATCMDS_FILE="/etc/modem/atcmmds.user"
+# Membuat direktori jika belum ada
+mkdir -p /etc/modem
 
-# Kosongkan file atcmmds.user untuk memastikan bersih
-> "$ATCMDS_FILE"
-
-# Isi file dengan daftar perintah AT baru
-cat << EOF > "$ATCMDS_FILE"
-Check signal strength;AT+CSQ
-SIERRA_Mengakses AT command yang protected;AT!ENTERCND="A710"
-FIBOCOM_Restart&Simpan Pengaturan Modem;AT+CFUN=1,1
+# Isi perintah AT yang akan digunakan untuk kedua file
+uci set atinout.general.atc_port='/dev/ttyUSB1'
+AT_COMMANDS=$(cat << 'ATEOF'
+AT;AT
+ATI;ATI
+Restart Modem;AT+CFUN=1,1
+DELL-DW5821e_DEBUG INFO;ATI^DEBUG?
+DELL-DW5821e_CEK LOCK BAND;AT^SLBAND?
+DELL-DW5821e_CEK TEMPERATUR;AT+TEMP?
+DELL-DW5821e_CEK VOLT;AT+VOLT?
+DELL-DW5821e_Lock B1;AT^SLBAND=LTE,2,1
+DELL-DW5821e_Lock B3;AT^SLBAND=LTE,2,3
+DELL-DW5821e_Lock B1&B3;AT^SLBAND=LTE,2,1,3
+DELL-DW5821e_RESTART MODEM;AT^RESET
+DELL-DW5821e_CEK FTM LOCK;at+ftm?
+DELL-DW5821e_FTM UNLOCK;at^nv=2497,1,"01"
+DELL-DW5821e_CEK NVM IMEI;at^nv=550
+DELL-DW5821e_HAPUS NVM IMEI;at^nv=550,"0"
+DELL-DW5821e_GANTI DENGAN IMEI NOKIA HIFI AIR;at^nv=550,9,"08,3A,65,20,89,53,18,05,05"
 FIBOCOM_Reset Modem;AT+RESET
 FIBOCOM_Cek QOS;AT+CGEQNEG
 FIBOCOM_Cek CA Band/Band Aktif;AT+XACT?
@@ -359,13 +525,168 @@ FIBOCOM_Cek Voltase Modem;AT+CBC
 FIBOCOM_Cek FCCLock;at@nvm:fix_cat_fcclock.fcclock_mode?
 FIBOCOM_Unlock FCC;at@nvm:fix_cat_fcclock.fcclock_mode=0
 FIBOCOM_Save Unlock FCC;at@store_nvm(fix_cat_fcclock)
-EOF
+SIERRA_Mengakses AT command Protected;AT!ENTERCND="A710"
+SIERRA_CEK MODE PROTOKOL;AT!USBCOMP?
+SIERRA_PROTO MBIM;AT!USBCOMP=1,1,100d
+SIERRA_PROTO QMI;AT!USBCOMP=1,1,10d
+SIERRA_DISABLE CA;AT!LTECA=0
+SIERRA_ENABLE CA;AT!LTECA=1
+SIERRA_NONATIFKAN GPS;AT!GPSEND
+SIERRA_CEK CACOMBO;AT!LTECA?
+SIERRA_GET UNLOCK CODE;AT!OPENLOCK?
+SIERRA_CEK FCC LOCK;AT!PCFCCAUTH?
+SIERRA_UNLOCK FCC;AT!PCFCCAUTH=0
+RM520N_AT+QNWINFO;AT+QNWINFO
+RM520N_AT+QENG="servingcell";AT+QENG="servingcell"
+RM520N_AT+QENG="neighbourcell";AT+QENG="neighbourcell"
+RM520N_AT+QCAINFO;AT+QCAINFO
+RM520N_AT+QTEMP;AT+QTEMP
+RM520N_Mode QMI/PPP/Default;AT+QCFG="usbnet",0
+RM520N_Mode ECM;AT+QCFG="usbnet",1
+RM520N_Mode MBIM;AT+QCFG="usbnet",2
+RM520N_Check LTE Band;AT+QNWPREFCFG="lte_band"
+RM520N_Lock LTE B1;AT+QNWPREFCFG="lte_band",1
+RM520N_Lock LTE B3;AT+QNWPREFCFG="lte_band",3
+RM520N_Lock LTE B8;AT+QNWPREFCFG="lte_band",8
+RM520N_Lock LTE B40;AT+QNWPREFCFG="lte_band",40
+RM520N_Lock LTE B1-3;AT+QNWPREFCFG="lte_band",1:3
+RM520N_Lock LTE B1-8;AT+QNWPREFCFG="lte_band",1:8
+RM520N_Lock LTE B1-40;AT+QNWPREFCFG="lte_band",1:40
+RM520N_Lock LTE B3-8;AT+QNWPREFCFG="lte_band",3:8
+RM520N_Lock LTE B3-40;AT+QNWPREFCFG="lte_band",3:40
+RM520N_Lock LTE B8-40;AT+QNWPREFCFG="lte_band",8:40
+RM520N_Lock LTE B1-3-8;AT+QNWPREFCFG="lte_band",1:3:8
+RM520N_Lock LTE B1-3-40;AT+QNWPREFCFG="lte_band",1:3:40
+RM520N_Lock LTE B1-8-40;AT+QNWPREFCFG="lte_band",1:8:40
+RM520N_Lock LTE B3-8-40;AT+QNWPREFCFG="lte_band",3:8:40
+RM520N_Lock LTE B1-3-8-40;AT+QNWPREFCFG="lte_band",1:3:8:40
+RM520N_Check NR Band;AT+QNWPREFCFG="nsa_nr5g_band"
+RM520N_Lock NR n1;AT+QNWPREFCFG="nsa_nr5g_band",1
+RM520N_Lock NR n3;AT+QNWPREFCFG="nsa_nr5g_band",3
+RM520N_Lock NR n8;AT+QNWPREFCFG="nsa_nr5g_band",8
+RM520N_Lock NR n40;AT+QNWPREFCFG="nsa_nr5g_band",40
+RM520N_Lock NR n1-3;AT+QNWPREFCFG="nsa_nr5g_band",1:3
+RM520N_Lock NR n1-8;AT+QNWPREFCFG="nsa_nr5g_band",1:8
+RM520N_Lock NR n1-40;AT+QNWPREFCFG="nsa_nr5g_band",1:40
+RM520N_Lock NR n3-8;AT+QNWPREFCFG="nsa_nr5g_band",3:8
+RM520N_Lock NR n3-40;AT+QNWPREFCFG="nsa_nr5g_band",3:40
+RM520N_Lock NR n8-40;AT+QNWPREFCFG="nsa_nr5g_band",8:40
+RM520N_Lock NR n1-3-8;AT+QNWPREFCFG="nsa_nr5g_band",1:3:8
+RM520N_Lock NR n1-3-40;AT+QNWPREFCFG="nsa_nr5g_band",1:3:40
+RM520N_Lock NR n1-8-40;AT+QNWPREFCFG="nsa_nr5g_band",1:8:40
+RM520N_Lock NR n3-8-40;AT+QNWPREFCFG="nsa_nr5g_band",3:8:40
+RM520N_Lock NR n1-3-8-40;AT+QNWPREFCFG="nsa_nr5g_band",1:3:8:40
+RM520N_Reset Lock Band;AT+QNWPREFCFG="restore_band"
+RM520N_Check PCI Lock;AT+QNWLOCK="COMMON/4g"
+RM520N_Lock PCI;AT+QNWLOCK="COMMON/4g",<num_cell>,<EARFCN>,<PCI>
+RM520N_Reset PCI Lock;AT+QNWLOCK="COMMON/4g",0
+T99W175_AT^TEMP?;AT^TEMP?
+T99W175_AT^DEBUG?;AT^DEBUG?
+T99W175_AT^CA_INFO?;AT^CA_INFO?
+T99W175_AT+COPS?;AT+COPS?
+T99W175_Get Active Band;AT^ABAND?
+T99W175_Check Neigh Cell;AT+VZWRSRP?
+T99W175_AT+CGDCONT=1,"IP";AT+CGDCONT=1,"IP"
+T99W175_AT+CGDCONT=1,"IPV4","internet";AT+CGDCONT=1,"IPV4","internet"
+T99W175_Lock LTE Only;AT^SLMODE=1,2
+T99W175_Lock LTE & 5GNR;AT^SLMODE=1,6
+T99W175_Lock WCDMA, LTE & 5GNR;AT^SLMODE=1,7
+T99W175_Check NR Mode;AT^NR5G_MODE?
+T99W175_NR Mode NSA & SA;AT^NR5G_MODE=0
+T99W175_NR Mode NSA Only;AT^NR5G_MODE=1
+T99W175_NR Mode SA Only;AT^NR5G_MODE=2
+T99W175_Display Selected Band;AT^SLBAND?
+T99W175_Lock LTE B1;AT^SLBAND=LTE,2,1
+T99W175_Lock LTE B3;AT^SLBAND=LTE,2,3
+T99W175_Lock LTE B8;AT^SLBAND=LTE,2,8
+T99W175_Lock LTE B40;AT^SLBAND=LTE,2,40
+T99W175_Lock LTE B1-3;AT^SLBAND=LTE,2,1,3
+T99W175_Lock LTE B1-8;AT^SLBAND=LTE,2,1,8
+T99W175_Lock LTE B1-40;AT^SLBAND=LTE,2,1,40
+T99W175_Lock LTE B3-8;AT^SLBAND=LTE,2,3,8
+T99W175_Lock LTE B3-40;AT^SLBAND=LTE,2,3,40
+T99W175_Lock LTE B8-40;AT^SLBAND=LTE,2,8,40
+T99W175_Lock LTE B1-3-8;AT^SLBAND=LTE,2,1,3,8
+T99W175_Lock LTE B1-3-40;AT^SLBAND=LTE,2,1,3,40
+T99W175_Lock LTE B1-8-40;AT^SLBAND=LTE,2,1,8,40
+T99W175_Lock LTE B3-8-40;AT^SLBAND=LTE,2,3,8,40
+T99W175_Lock LTE B1-3-8-40;AT^SLBAND=LTE,2,1,3,8,40
+T99W175_Lock NR n1;AT^SLBAND=NR5G,2,1
+T99W175_Lock NR n3;AT^SLBAND=NR5G,2,3
+T99W175_Lock NR n8;AT^SLBAND=NR5G,2,8
+T99W175_Lock NR n40;AT^SLBAND=NR5G,2,40
+T99W175_Lock NR n1-3;AT^SLBAND=NR5G,2,1,3
+T99W175_Lock NR n1-8;AT^SLBAND=NR5G,2,1,8
+T99W175_Lock NR n1-40;AT^SLBAND=NR5G,2,1,40
+T99W175_Lock NR n3-8;AT^SLBAND=NR5G,2,3,8
+T99W175_Lock NR n3-40;AT^SLBAND=NR5G,2,3,40
+T99W175_Lock NR n8-40;AT^SLBAND=NR5G,2,8,40
+T99W175_Lock NR n1-3-8;AT^SLBAND=NR5G,2,1,3,8
+T99W175_Lock NR n1-3-40;AT^SLBAND=NR5G,2,1,3,40
+T99W175_Lock NR n1-8-40;AT^SLBAND=NR5G,2,1,8,40
+T99W175_Lock NR n3-8-40;AT^SLBAND=NR5G,2,3,8,40
+T99W175_Lock NR n1-3-8-40;AT^SLBAND=NR5G,2,1,3,8,40
+T99W175_Reset Selected Band;AT^SLBAND
+T99W175_Check PCI Lock;AT^LTE_LOCK?
+T99W175_Lock PCI;AT^LTE_LOCK=<PCI>,<EARFCN>
+T99W175_Reset PCI Lock;AT^LTE_LOCK
+T99W175_check lte_feature_enable;at^efs="/nv/item_files/modem/lte/rrc/efs/lte_feature_enable"
+T99W175_check lte_feature_enable_Subscription01;at^efs="/nv/item_files/modem/lte/rrc/efs/lte_feature_enable_Subscription01"
+T99W175_lte_feature_enable;at^efs="/nv/item_files/modem/lte/rrc/efs/lte_feature_enable",32,"FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF"
+T99W175_lte_feature_enable_Subscription01;at^efs="/nv/item_files/modem/lte/rrc/efs/lte_feature_enable_Subscription01",32,"FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF"
+T99W175_Delete carrier_policy.xml;AT^EFS="/policyman/carrier_policy.xml",0
+T99W175_Delete policies.xml;AT^EFS="/policyman/policies.xml",0
+FM350_Restart Modem;AT+CFUN=15
+FM350_AT+COPS?;AT+COPS?
+FM350_AT+GTCCINFO?;AT+GTCCINFO?
+FM350_AT+GTCAINFO?;AT+GTCAINFO?
+FM350_AT+CGDCONT=1,"IP";AT+CGDCONT=1,"IP"
+FM350_AT+CGDCONT=1,"IPV4","internet";AT+CGDCONT=1,"IPV4","internet"
+FM350_AT+GTSENRDTEMP=0;AT+GTSENRDTEMP=0
+FM350_AT+GTUSBMODE?;AT+GTUSBMODE?
+FM350_AT+GTUSBMODE=40;AT+GTUSBMODE=40
+FM350_AT+GTUSBMODE=41;AT+GTUSBMODE=41
+FM350_Check NR Mode;AT+E5GOPT?
+FM350_NR Mode NSA Only;AT+E5GOPT=5
+FM350_NR Mode SA Only;AT+E5GOPT=3
+FM350_NR Mode NSA & SA;AT+E5GOPT=7
+FM350_Check Bands Lock;AT+GTACT?
+FM350_Lock LTE B1 & All NR;AT+GTACT=20,6,3,101,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B3 & All NR;AT+GTACT=20,6,3,103,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B8 & All NR;AT+GTACT=20,6,3,108,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B40 & All NR;AT+GTACT=20,6,3,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-3 & All NR;AT+GTACT=20,6,3,101,103,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-8 & All NR;AT+GTACT=20,6,3,101,108,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-40 & All NR;AT+GTACT=20,6,3,101,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B3-8 & All NR;AT+GTACT=20,6,3,103,108,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B3-40 & All NR;AT+GTACT=20,6,3,103,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B8-40 & All NR;AT+GTACT=20,6,3,108,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-3-8 & All NR;AT+GTACT=20,6,3,101,103,108,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-3-40 & All NR;AT+GTACT=20,6,3,101,103,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-8-40 & All NR;AT+GTACT=20,6,3,101,108,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B3-8-40 & All NR;AT+GTACT=20,6,3,103,108,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-3-8-40 & All NR;AT+GTACT=20,6,3,101,103,108,140,501,502,503,505,507,508,5020,5025,5028,5030,5038,5040,5041,5048,5066,5071,5077,5078,5079
+FM350_Lock LTE B1-3-8-40 & NR n1;AT+GTACT=20,6,3,101,103,108,140,501
+FM350_Lock LTE B1-3-8-40 & NR n3;AT+GTACT=20,6,3,101,103,108,140,503
+FM350_Lock LTE B1-3-8-40 & NR n8;AT+GTACT=20,6,3,101,103,108,140,508
+FM350_Lock LTE B1-3-8-40 & NR n40;AT+GTACT=20,6,3,101,103,108,140,540
+FM350_Reset Lock Band;AT+GTACT=20,6,3,0
+ATEOF
+)
 
-logger "AT commands file has been cleared and populated with default commands."
+# Tulis ke /etc/modem/atcmmds.user
+echo "$AT_COMMANDS" > /etc/modem/atcmmds.user
+
+# Tulis ke /etc/atcommands.user
+echo "$AT_COMMANDS" > /etc/atcommands.user
+
+logger "AT commands file has been cleared and populated with default commands in both /etc/modem/atcmmds.user and /etc/atcommands.user"
 # Additional system tweaks
 sed -i 's/option check_signature/# option check_signature/g' /etc/opkg.conf
 sed -i -e '/413c:81d7/,+5d' /etc/usb-mode.json
-sed -i 's|^root:.*|root:$1$duCNkwTC$ECUVaqjQfcERRH8YccOQu.:0:0:99999:7:::|' /etc/shadow
+sed -i -e '/413c:81e0/,+5d' /etc/usb-mode.json
+sed -i -e '/12d1:15c1/,+5d' /etc/usb-mode.json
+sed -i 's|^root:.*|root:$1$duCNkwTC$09nYvvrd6ivbjQD6hajVi.:0:0:99999:7:::|' /etc/shadow
 
 # Disable and stop specified services on first boot
 if [ -f /etc/init.d/relayd ];
@@ -378,6 +699,12 @@ if [ -f /etc/init.d/openvpn ];
 then
   /etc/init.d/openvpn stop
   /etc/init.d/openvpn disable
+fi
+
+if [ -f /etc/init.d/adblock ];
+then
+  /etc/init.d/adblock stop
+  /etc/init.d/adblock disable
 fi
 
 exit 0
